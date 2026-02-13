@@ -1,9 +1,15 @@
-import * as render_example from './render_example.js';
+import * as render_phases from './phases_crashes.js';
 
-let svg = d3.select("#chart-area").append("svg").attr("id", "render_example");
+let svg_phases = d3.select("body")
+    .append("svg")
+    .attr("width", 900)
+    .attr("height", 500);
 
-d3.csv("data/plane_crashes.csv").then(csv => {
-    render_example.render(svg, csv);
+d3.csv("data/phase_crashes.csv").then(csv => {
+    csv.forEach(d => {
+        d.crashes = +d.crashes;
+    })
+    render_phases.render_phases(svg_phases, csv);
 });
 
 
