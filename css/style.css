@@ -121,3 +121,231 @@ body{
 .viz-tooltip strong{
     color: var(--accent);
 }
+
+/* ========== Globe visualization (plane crashes heat map) ========== */
+.globe-viz .globe-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: var(--panel-strong);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+.globe-viz .globe-control-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.globe-viz .globe-control-group label {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--muted);
+}
+.globe-viz input[type="range"] {
+    width: 200px;
+    height: 6px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.2);
+    -webkit-appearance: none;
+    appearance: none;
+}
+.globe-viz input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+}
+.globe-viz #year-display {
+    font-weight: 700;
+    min-width: 50px;
+    text-align: center;
+    background: var(--panel-strong);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.globe-viz .globe-control-group button {
+    padding: 10px 20px;
+    background: var(--panel-strong);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+.globe-viz .globe-control-group button:hover {
+    background: rgba(255,255,255,0.12);
+}
+.globe-viz .globe-stats {
+    text-align: center;
+    margin-bottom: 16px;
+    font-size: 1em;
+    color: var(--muted);
+}
+.globe-viz .globe-stats #crash-count {
+    color: var(--accent);
+    font-weight: 700;
+}
+.globe-viz #legend.globe-legend {
+    margin-bottom: 20px;
+    padding: 14px 20px;
+    background: var(--panel-strong);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    text-align: center;
+}
+.globe-viz .legend-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.globe-viz .legend-items {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.globe-viz .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+    color: var(--muted);
+}
+.globe-viz .legend-color {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+}
+.globe-viz .legend-gradient {
+    display: inline-block;
+    width: 180px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+}
+.globe-viz #globe-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.35);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    margin: 0 auto;
+}
+.globe-viz #globe-container svg {
+    position: relative;
+    z-index: 1;
+    cursor: grab;
+}
+.globe-viz #globe-container canvas {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 2;
+    cursor: grab;
+    pointer-events: auto;
+}
+.globe-viz #auto-rotate-btn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    padding: 10px 16px;
+    background: var(--panel-strong);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+.globe-viz #auto-rotate-btn:hover {
+    background: rgba(255,255,255,0.12);
+}
+.globe-viz .crash-info-box {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 20px;
+    padding: 20px 24px;
+    background: var(--panel-strong);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    min-height: 80px;
+}
+.globe-viz .crash-info-box.active {
+    border-color: var(--accent);
+    background: rgba(125, 211, 252, 0.06);
+}
+.globe-viz .info-box-content { color: var(--text); }
+.globe-viz .info-placeholder {
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+    margin: 0;
+}
+.globe-viz .crash-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+.globe-viz .crash-detail-item { display: flex; flex-direction: column; }
+.globe-viz .crash-detail-label {
+    font-size: 0.8em;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+.globe-viz .crash-detail-value { font-size: 1em; color: var(--text); }
+.globe-viz .crash-detail-value.highlight { color: var(--accent); font-weight: 700; }
+.globe-viz .crash-title {
+    grid-column: 1 / -1;
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+}
+.globe-viz .crash-navigation {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.globe-viz .nav-button {
+    padding: 8px 16px;
+    background: var(--panel-strong);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+.globe-viz .nav-button:hover:not(:disabled) {
+    background: rgba(255,255,255,0.1);
+}
+.globe-viz .nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.globe-viz .nav-info { font-weight: 600; color: var(--muted); font-size: 0.9em; }
