@@ -1,0 +1,12 @@
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 20px;
+}
+
+#phases-chart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
