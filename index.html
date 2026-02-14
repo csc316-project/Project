@@ -12,44 +12,78 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
+<header class="site-header">
     <div class="main-container">
-        <h1>Plane Crashes</h1>
-        <p>DESCRIPTION</p>
-
-        <h2>What are the primary cause of air crashes?</h2>
-        <img src="images/sketches/primary_causes.png" alt="A visualization sketch of the primary causes of air crashes">
-        <p>DESCRIPTION</p>
-
-        <h2>Where do planes crash?</h2>
-        <img src="images/sketches/map_crashes.png" alt="A visualization sketch of the crashes mapped globally">
-        <p>DESCRIPTION</p>
-
-        <h2>What is the relationship between crashes per year?</h2>
-        <img src="images/sketches/years_crashes.png" alt="A visualization sketch of crashes per year">
-        <p>DESCRIPTION</p>
-
-        <h2>Which phase of aviation do crashes happen the most?</h2>
-        <div id="phases-chart"></div>
-        <p>DESCRIPTION</p>
-
-        <h2>Aircraft Type vs Number of Occurrences</h2>
-        <div id="jar-viz"></div>
-        <p>DESCRIPTION</p>
-
-        <h2>Heatmap of Fatality During a Crash</h2>
-        <img src="images/sketches/plane_heatmap.png" alt="A visualization sketch of the most fatal places during a plane
-         crash">
-        <p>DESCRIPTION</p>
-        <p>Interactivity: when hovered on, the plane will travel across the nodes on a line and display the total crash
-            data.</p>
-
-        <h2>Weather Impacting Crashes</h2>
-        <img src="images/sketches/weather_crashes.png" alt="A visualization sketch of the relationship between weather
-        and plane crash likelihood">
-        <p>DESCRIPTION</p>
-
+        <div class="header-row">
+            <div>
+                <h1 class="title">Team Flight Risk</h1>
+                <p class="subtitle">A visual exploration of where, when, and why aviation incidents occur.</p>
+            </div>
+        </div>
     </div>
+</header>
+
+<main class="main-container">
+    <section class="viz-section">
+        <h2>What are the primary causes of air crashes?</h2>
+        <figure class="viz-figure">
+            <img class="viz-img" src="images/sketches/primary_causes.png"
+                 alt="A visualization sketch of the primary causes of air crashes">
+        </figure>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+
+    <section class="viz-section">
+        <h2>Where do planes crash?</h2>
+        <figure class="viz-figure">
+            <img class="viz-img" src="images/sketches/map_crashes.png"
+                 alt="A visualization sketch of the crashes mapped globally">
+        </figure>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+
+    <section class="viz-section">
+        <h2>What is the relationship between crashes per year?</h2>
+        <figure class="viz-figure">
+            <img class="viz-img" src="images/sketches/years_crashes.png"
+                 alt="A visualization sketch of crashes per year">
+        </figure>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+
+    <section class="viz-section">
+        <h2>Which phase of aviation do crashes happen the most?</h2>
+        <div id="phases-chart" class="viz-block"></div>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+
+    <section class="viz-section">
+        <h2>Aircraft Type vs Number of Occurrences</h2>
+        <div id="jar-viz" class="viz-block"></div>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+
+    <section class="viz-section">
+        <h2>Heatmap of Fatality During a Crash</h2>
+        <figure class="viz-figure">
+            <img class="viz-img" src="images/sketches/plane_heatmap.png"
+                 alt="A visualization sketch of the most fatal places during a plane crash">
+        </figure>
+        <p class="viz-desc">DESCRIPTION</p>
+        <p class="viz-note">
+            Interactivity: when hovered on, the plane will travel across the nodes on a line and display total crash data.
+        </p>
+    </section>
+
+    <section class="viz-section">
+        <h2>Weather Impacting Crashes</h2>
+        <figure class="viz-figure">
+            <img class="viz-img" src="images/sketches/weather_crashes.png"
+                 alt="A visualization sketch of the relationship between weather and plane crash likelihood">
+        </figure>
+        <p class="viz-desc">DESCRIPTION</p>
+    </section>
+</main>
 
 
 <!-- Load JS libraries: jQuery, bootstrap, D3 -->
