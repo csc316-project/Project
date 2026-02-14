@@ -1,15 +1,12 @@
-import * as render_example from './render_example.js';
 import * as render_jar from './jar_viz.js';
 import * as phases from './phases_crashes.js';
-
-let svg = d3.select("#chart-area").append("svg").attr("id", "render_example");
   
 let svg_phases = d3.select("#phases-chart")
     .append("svg")
     .attr("width", 900)
     .attr("height", 500);
 
-let svg_jar = d3.select("body")
+let svg_jar = d3.select("#jar-viz")
   .append("svg")
     .attr("width", 900)
     .attr("height", 900)
@@ -17,7 +14,6 @@ let svg_jar = d3.select("body")
     .attr("text-anchor", "middle");
 
 d3.csv("data/plane_crashes.csv").then(csv => {
-    render_example.render(svg, csv);
     render_jar.render_jar(svg_jar, csv);
 });
   
