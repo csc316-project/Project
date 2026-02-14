@@ -1,6 +1,6 @@
-# Plane Crashes Heat Map - D3 Globe Visualization
+# Team Flight Risk — CSC316 Project
 
-A dynamic, interactive heat map visualization of historical plane crashes displayed on a 3D globe using D3.js. The globe is integrated in the main project under the section **"Where do planes crash?"**.
+A visual exploration of where, when, and why aviation incidents occur.
 
 ### Run the visualization locally
 
