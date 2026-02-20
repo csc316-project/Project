@@ -1,511 +1,404 @@
-// Globe settings
-const GLOBE_W = 960;
-const GLOBE_H = 600;
+var W = 960, H = 600;
 
-class GlobeApp {
-    constructor(targetID) {
-        this.container = d3.select(targetID);
-        
-        // App State
-        this.year = 2023;
-        this.running = false;
-        this.speed = 1.0;
-        this.autoSpin = true;
-        this.spin = { x: 0, y: 0 };
-        
-        // Selection
-        this.selCrashes = [];
-        this.selIndex = 0;
-        
-        // Input state
-        this.dragging = false;
-        this.dragStart = { x: 0, y: 0 };
-        this.lastMouse = { x: 0, y: 0 };
-        this.clickTime = 0;
+(function() {
+    var box = d3.select("#globe-container");
+    var loadEl = box.select(".loading");
+    if (loadEl.size() > 0) loadEl.remove();
 
-        // Data arrays
-        this.raw = [];
-        this.active = [];
-        this.points = []; // clickable points
+    var svg = box.append("svg");
+    svg.attr("width", W);
+    svg.attr("height", H);
+    var cvs = box.append("canvas");
+    cvs.attr("width", W).attr("height", H);
+    var ctx = cvs.node().getContext("2d");
 
-        // Timers
-        this.loop = null;
-        this.spinTimer = null;
-        this.raf = null;
+    var proj = d3.geoOrthographic();
+    proj.scale(300);
+    proj.translate([W/2, H/2]);
+    proj.clipAngle(90);
+    var path = d3.geoPath().projection(proj);
 
-        this.init();
-    }
+    var yearNow = 2023, playing = false, speed = 1, autoRot = true;
+    var rotX = 0, rotY = 0;
+    var drag = false;
+    var lastX = 0, lastY = 0, startX = 0, startY = 0, tDown = 0;
+    var crashes = [], byYear = [], hitList = [], selected = [];
+    var selIdx = 0;
+    var playTimer = null, rotTimer = null, raf = null;
+    var yearRange = { lo: 1900, hi: 2023 };
 
-    init() {
-        this.container.select(".loading").remove();
-
-        // 1. Setup Canvas & SVG layers
-        this.svg = this.container.append("svg")
-            .attr("width", GLOBE_W).attr("height", GLOBE_H);
-        
-        this.cvs = this.container.append("canvas")
-            .attr("width", GLOBE_W).attr("height", GLOBE_H);
-        this.ctx = this.cvs.node().getContext("2d");
-
-        // 2. Setup Projection
-        this.proj = d3.geoOrthographic()
-            .scale(300)
-            .translate([GLOBE_W/2, GLOBE_H/2])
-            .clipAngle(90);
-            
-        this.path = d3.geoPath().projection(this.proj);
-
-        // 3. Load Data
-        Promise.all([
-            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"),
-            d3.csv("data/Plane_Crashes_with_Coordinates.csv")
-        ]).then(([world, csv]) => {
-            this.parse(csv);
-            this.drawWorld(world);
-            this.update();
-            this.bindUI();
-            this.bindMouse();
-            this.toggleSpin(true);
-        }).catch(e => console.error("Load error:", e));
-    }
-
-    parse(rows) {
-        // Manual loop is often faster than map/filter chains
-        const clean = [];
-        for (let i = 0; i < rows.length; i++) {
-            let r = rows[i];
-            let lat = parseFloat(r.Latitude || r.lat || 0);
-            let lon = parseFloat(r.Longitude || r.lon || 0);
-            
-            // Handle messy dates
-            let y = null;
-            let dStr = (r.Date || "").trim();
-            if (dStr.includes('-')) y = parseInt(dStr.split('-')[0]);
-            else if (dStr.includes('/')) y = parseInt(dStr.split('/').pop());
-
-            // Only keep valid rows
-            if (!isNaN(lat) && !isNaN(lon) && y) {
-                clean.push({
-                    lat: lat,
-                    lon: lon,
-                    year: y,
-                    loc: r["Crash location"] || r.Location || "Unknown",
-                    op: r.Operator || "Unknown",
-                    dead: parseInt(r["Total fatalities"] || r.Fatalities || 0) || 0,
-                    country: r.Country || "Unknown"
-                });
+    function parseCSV(rows) {
+        var arr = [];
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var lat = parseFloat(r.Latitude || r.lat || 0);
+            var lon = parseFloat(r.Longitude || r.lon || 0);
+            var yr;
+            var ds = (r.Date || "").trim();
+            if (ds.indexOf("-") !== -1) {
+                yr = parseInt(ds.substring(0, ds.indexOf("-")), 10);
+            } else if (ds.indexOf("/") !== -1) {
+                var p = ds.split("/");
+                yr = parseInt(p[p.length - 1], 10);
+            } else {
+                yr = null;
             }
+            if (isNaN(lat) || isNaN(lon)) continue;
+            if (yr === null || yr === undefined) continue;
+            arr.push({
+                lat: lat, lon: lon, year: yr,
+                loc: r["Crash location"] || r.Location || "Unknown",
+                op: r.Operator || "Unknown",
+                dead: parseInt(r["Total fatalities"] || r.Fatalities || 0, 10) || 0,
+                country: r.Country || "Unknown"
+            });
         }
-        this.raw = clean;
+        crashes = arr;
     }
 
-    drawWorld(world) {
-        let lands = topojson.feature(world, world.objects.countries).features;
-        
-        // Static map background
-        this.svg.append("g").selectAll("path")
-            .data(lands).enter().append("path")
-            .attr("d", this.path)
-            .attr("fill", "#1a1a2e")
-            .attr("stroke", "#16213e")
-            .attr("stroke-width", 0.8);
-            
-        // Grid lines
-        this.svg.append("path")
-            .datum(d3.geoGraticule())
-            .attr("d", this.path)
-            .attr("fill", "none")
-            .attr("stroke", "rgba(255,255,255,0.15)")
-            .attr("stroke-width", 0.5);
-            
-        // Atmospheric glow
-        let r = this.proj.scale();
-        this.svg.append("circle")
-            .attr("cx", GLOBE_W/2).attr("cy", GLOBE_H/2).attr("r", r)
-            .attr("fill", "none").attr("stroke", "rgba(255,255,255,0.4)")
-            .attr("stroke-width", 2);
+    function drawMap(geo) {
+        var topo = topojson.feature(geo, geo.objects.countries);
+        var feats = topo.features;
+        var g = svg.append("g");
+        var paths = g.selectAll("path").data(feats);
+        paths.enter().append("path");
+        g.selectAll("path").attr("d", path).attr("fill", "#1a1a2e").attr("stroke", "#16213e").attr("stroke-width", 0.8);
+        var grat = d3.geoGraticule();
+        var gratPath = svg.append("path");
+        gratPath.datum(grat).attr("d", path).attr("fill", "none");
+        gratPath.attr("stroke", "rgba(255,255,255,0.15)").attr("stroke-width", 0.5);
+        var sc = proj.scale();
+        var circ = svg.append("circle");
+        circ.attr("cx", W/2).attr("cy", H/2).attr("r", sc);
+        circ.attr("fill", "none").attr("stroke", "rgba(255,255,255,0.4)").attr("stroke-width", 2);
     }
 
-    update() {
-        this.active = this.raw.filter(x => x.year <= this.year);
-        d3.select("#crash-count").text(this.active.length);
-        this.render();
-    }
-
-    render() {
-        this.ctx.clearRect(0, 0, GLOBE_W, GLOBE_H);
-        
-        let heat = [];
-        // Only show heatmap if there's a lot of data
-        if (this.active.length > 500) {
-            heat = this.calcHeatmap();
-            this.drawHeat(heat);
+    function getHeatCells() {
+        var cell = 3, map = {}, n = byYear.length, idx, c, gx, gy, id, out = [], key;
+        idx = 0;
+        while (idx < n) {
+            c = byYear[idx];
+            gx = Math.floor((c.lon + 180) / cell);
+            gy = Math.floor((c.lat + 90) / cell);
+            id = String(gx) + "_" + String(gy);
+            if (!map[id]) map[id] = { x: gx*cell - 180 + cell/2, y: gy*cell - 90 + cell/2, cnt: 0 };
+            map[id].cnt++;
+            idx++;
         }
-        
-        this.drawPoints();
-        this.drawLegend(heat);
+        for (key in map) { if (map.hasOwnProperty(key)) out.push(map[key]); }
+        return out;
     }
 
-    calcHeatmap() {
-        let grid = {};
-        let sz = 3; // grid size
-        
-        for (let c of this.active) {
-            let gx = Math.floor((c.lon + 180) / sz);
-            let gy = Math.floor((c.lat + 90) / sz);
-            let k = gx + "-" + gy;
-            
-            if (!grid[k]) {
-                grid[k] = {
-                    x: gx * sz - 180 + sz/2,
-                    y: gy * sz - 90 + sz/2,
-                    c: 0
-                };
-            }
-            grid[k].c++;
+    function rgbFromT(t) {
+        var r, g, b;
+        if (t < 0.25) {
+            r = 0; g = Math.floor(t*4*255); b = 128 + Math.floor(t*4*127);
+        } else if (t < 0.5) {
+            r = Math.floor((t-0.25)*4*255); g = 255; b = Math.floor((1-(t-0.25)*4)*255);
+        } else if (t < 0.75) {
+            r = 255; g = Math.floor((1-(t-0.5)*4*0.5)*255); b = 0;
+        } else {
+            r = 255; g = Math.floor((0.5-(t-0.75)*4*0.5)*255); b = 0;
         }
-        return Object.values(grid);
+        return { r: r, g: g, b: b };
     }
 
-    drawHeat(grid) {
-        if (!grid.length) return;
-        let max = 0;
-        grid.forEach(g => { if(g.c > max) max = g.c; });
-        
-        let center = [GLOBE_W/2, GLOBE_H/2];
-        let lim = (this.proj.scale() + 50) ** 2;
-
-        for (let g of grid) {
-            let pos = this.proj([g.x, g.y]);
-            if (!pos || isNaN(pos[0])) continue;
-            
-            // Check distance to center to clip back-face points
-            let dist = (pos[0]-center[0])**2 + (pos[1]-center[1])**2;
-            if (dist > lim) continue;
-            
-            let t = g.c / max;
-            let rad = Math.sqrt(t) * 50;
-            let col = this.heatColor(t);
-            
-            this.ctx.fillStyle = `rgba(${col.r},${col.g},${col.b},0.7)`;
-            this.ctx.beginPath();
-            this.ctx.arc(pos[0], pos[1], rad, 0, 6.28);
-            this.ctx.fill();
+    function drawHeat(cells) {
+        if (!cells || cells.length === 0) return;
+        var mx = 0, i, j, b, pt, cx, cy, sc, maxR2, t, rad, rgb;
+        for (i = 0; i < cells.length; i++) { if (cells[i].cnt > mx) mx = cells[i].cnt; }
+        cx = W/2; cy = H/2; sc = proj.scale(); maxR2 = (sc+50)*(sc+50);
+        for (j = 0; j < cells.length; j++) {
+            b = cells[j];
+            pt = proj([b.x, b.y]);
+            if (!pt || isNaN(pt[0])) continue;
+            if ((pt[0]-cx)*(pt[0]-cx) + (pt[1]-cy)*(pt[1]-cy) > maxR2) continue;
+            t = b.cnt / mx;
+            rad = Math.sqrt(t) * 50;
+            rgb = rgbFromT(t);
+            ctx.fillStyle = "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.7)";
+            ctx.beginPath();
+            ctx.arc(pt[0], pt[1], rad, 0, 2*Math.PI);
+            ctx.fill();
         }
     }
 
-    heatColor(t) {
-        // Hand-coded gradient (Blue -> Yellow -> Red)
-        if (t < 0.25) return {r:0, g:Math.floor(t*4*255), b:128+Math.floor(t*4*127)};
-        if (t < 0.5) return {r:Math.floor((t-0.25)*4*255), g:255, b:Math.floor((1-(t-0.25)*4)*255)};
-        if (t < 0.75) return {r:255, g:Math.floor((1-(t-0.5)*4*0.5)*255), b:0};
-        return {r:255, g:Math.floor((0.5-(t-0.75)*4*0.5)*255), b:0};
-    }
-
-    drawPoints() {
-        this.points = [];
-        let list = this.active;
-        
-        // Optimization: Limit points if too many
+    function drawCrashDots() {
+        hitList = [];
+        var list = byYear;
         if (list.length > 2000) {
-            let sorted = [...list].sort((a,b) => b.dead - a.dead);
-            // Keep top 600, sample the rest
-            let top = sorted.slice(0, 600);
-            let rem = sorted.slice(600);
-            let step = Math.ceil(rem.length / 1400);
-            for(let i=0; i<rem.length; i+=step) top.push(rem[i]);
+            var sorted = list.slice().sort(function(a,b) { return b.dead - a.dead; });
+            var top = sorted.slice(0, 600), rest = sorted.slice(600);
+            var step = Math.ceil(rest.length / 1400);
+            for (var i = 0; i < rest.length; i += step) top.push(rest[i]);
             list = top;
         }
-
-        let lim = this.proj.scale() + 50;
-        let cx = GLOBE_W/2;
-        let cy = GLOBE_H/2;
-
-        for (let p of list) {
-            let xy = this.proj([p.lon, p.lat]);
-            if (!xy) continue;
-            
-            // Basic clipping
-            if (Math.hypot(xy[0]-cx, xy[1]-cy) > lim) continue;
-
-            let r = p.dead > 0 ? Math.min(3, 1 + p.dead/100) : 1.5;
-            
-            // Store for hit testing
-            this.points.push({ data: p, x: xy[0], y: xy[1], r: r });
-
-            // Check if selected
-            let sel = this.selCrashes.some(s => s.lat === p.lat && s.lon === p.lon && s.year === p.year);
-            
-            this.ctx.beginPath();
-            this.ctx.arc(xy[0], xy[1], sel ? r+2 : r, 0, 6.28);
-            if (sel) {
-                this.ctx.fillStyle = "rgba(255, 200, 50, 0.9)";
-                this.ctx.fill();
-                this.ctx.strokeStyle = "#fff";
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
+        var lim = proj.scale() + 50, cx = W/2, cy = H/2;
+        for (var k = 0; k < list.length; k++) {
+            var p = list[k];
+            var xy = proj([p.lon, p.lat]);
+            if (!xy || Math.hypot(xy[0]-cx, xy[1]-cy) > lim) continue;
+            var rad = p.dead > 0 ? Math.min(3, 1 + p.dead/100) : 1.5;
+            hitList.push({ d: p, x: xy[0], y: xy[1], r: rad });
+            var hi = false;
+            for (var s = 0; s < selected.length; s++)
+                if (selected[s].lat === p.lat && selected[s].lon === p.lon && selected[s].year === p.year) { hi = true; break; }
+            ctx.beginPath();
+            ctx.arc(xy[0], xy[1], hi ? rad+2 : rad, 0, Math.PI*2);
+            if (hi) {
+                ctx.fillStyle = "rgba(255,200,50,0.9)";
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
             } else {
-                this.ctx.fillStyle = "rgba(255, 100, 100, 0.6)";
-                this.ctx.fill();
-                this.ctx.strokeStyle = "rgba(255,255,255,0.9)";
-                this.ctx.lineWidth = 0.5;
-                this.ctx.stroke();
+                ctx.fillStyle = "rgba(255,100,100,0.6)";
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.9)";
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
             }
         }
     }
 
-    drawLegend(heat) {
-        let leg = d3.select("#legend-items");
-        if (!heat.length) {
-            leg.html('<div class="legend-item">No crashes</div>');
-            return;
-        }
-        
-        let max = 0;
-        heat.forEach(h => max = Math.max(max, h.c));
-        
-        // Simple HTML string construction
-        let html = '<div style="display:flex; height:10px; background:linear-gradient(90deg, blue, cyan, yellow, orange, red); width:100%; margin-bottom:5px;"></div>';
-        html += `<div style="text-align:center; font-size:12px; opacity:0.8;">Max density: ${max}</div>`;
-        leg.html(html);
+    function refreshLegend(cells) {
+        var leg = d3.select("#legend-items");
+        if (!cells.length) { leg.html('<div class="legend-item">No crashes</div>'); return; }
+        var mx = 0;
+        for (var i = 0; i < cells.length; i++) if (cells[i].cnt > mx) mx = cells[i].cnt;
+        leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,blue,cyan,yellow,orange,red);width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
     }
 
-    // --- Inputs & Controls ---
+    function repaint() {
+        ctx.clearRect(0, 0, W, H);
+        var heat = [];
+        if (byYear.length > 500) {
+            heat = getHeatCells();
+            drawHeat(heat);
+        }
+        drawCrashDots();
+        refreshLegend(heat);
+    }
 
-    bindUI() {
-        let slider = d3.select("#year-slider");
-        let disp = d3.select("#year-display");
-        
-        // Calculate min/max years
-        let ys = this.raw.map(d => d.year).filter(y => y);
-        let min = Math.min(...ys);
-        let max = Math.max(...ys);
-        
-        slider.attr("min", min).attr("max", max).attr("value", max)
-            .on("input", (e) => {
-                this.year = +e.target.value;
-                disp.text(this.year);
-                if(!this.raf) this.doFrame();
-            });
-            
-        this.year = max;
-        disp.text(max);
-        
-        // Play button logic
-        d3.select("#play-pause").on("click", function() {
-            let self = d3.select(this);
-            // using global access for simplicity
-            let app = window.vizApp; 
-            app.running = !app.running;
-            
-            if(app.running) {
-                self.text("Pause");
-                app.loop = setInterval(() => {
-                    app.year = app.year >= max ? min : app.year + 1;
-                    slider.property("value", app.year);
-                    disp.text(app.year);
-                    app.doFrame();
-                }, 1000 / app.speed);
+    function applyYear() {
+        byYear = [];
+        for (var i = 0; i < crashes.length; i++) if (crashes[i].year <= yearNow) byYear.push(crashes[i]);
+        d3.select("#crash-count").text(byYear.length);
+        repaint();
+    }
+
+    function frame() {
+        if (raf) return;
+        raf = requestAnimationFrame(function() {
+            proj.rotate([rotY, -rotX]);
+            svg.selectAll("path").attr("d", path);
+            applyYear();
+            raf = null;
+        });
+    }
+
+    function wireControls() {
+        var yrs = [];
+        for (var i = 0; i < crashes.length; i++) yrs.push(crashes[i].year);
+        yearRange.lo = Math.min.apply(null, yrs);
+        yearRange.hi = Math.max.apply(null, yrs);
+        var slider = d3.select("#year-slider");
+        var disp = d3.select("#year-display");
+        slider.attr("min", yearRange.lo);
+        slider.attr("max", yearRange.hi);
+        slider.attr("value", yearRange.hi);
+        slider.on("input", function() {
+            yearNow = +this.value;
+            disp.text(yearNow);
+            if (raf === null) frame();
+        });
+        yearNow = yearRange.hi;
+        disp.text(yearNow);
+
+        var playBtn = d3.select("#play-pause");
+        playBtn.on("click", function() {
+            playing = !playing;
+            playBtn.text(playing ? "Pause" : "Play");
+            if (playing) {
+                var step = 1000 / speed;
+                playTimer = setInterval(function() {
+                    if (yearNow >= yearRange.hi) yearNow = yearRange.lo;
+                    else yearNow++;
+                    slider.property("value", yearNow);
+                    disp.text(yearNow);
+                    frame();
+                }, step);
             } else {
-                self.text("Play");
-                clearInterval(app.loop);
+                clearInterval(playTimer);
             }
         });
 
         d3.select("#speed-slider").on("input", function() {
-            window.vizApp.speed = +this.value;
-            d3.select("#speed-display").text(window.vizApp.speed.toFixed(1));
+            speed = parseFloat(this.value, 10);
+            d3.select("#speed-display").text(speed.toFixed(1));
         });
 
-        d3.select("#reset").on("click", () => {
-            let app = window.vizApp;
-            app.running = false;
-            clearInterval(app.loop);
+        d3.select("#reset").on("click", function() {
+            playing = false;
+            clearInterval(playTimer);
             d3.select("#play-pause").text("Play");
-            app.year = min;
-            slider.property("value", min);
-            disp.text(min);
-            app.doFrame();
+            yearNow = yearRange.lo;
+            slider.property("value", yearRange.lo);
+            disp.text(yearRange.lo);
+            frame();
         });
 
-        d3.select("#auto-rotate-btn").on("click", function() {
-            let app = window.vizApp;
-            app.autoSpin = !app.autoSpin;
-            d3.select(this).text(app.autoSpin ? "Stop Auto-Rotate" : "Start Auto-Rotate");
-            if(app.autoSpin) app.toggleSpin(true);
-            else app.toggleSpin(false);
+        var autoBtn = d3.select("#auto-rotate-btn");
+        autoBtn.on("click", function() {
+            autoRot = !autoRot;
+            autoBtn.text(autoRot ? "Stop Auto-Rotate" : "Start Auto-Rotate");
+            if (rotTimer) clearInterval(rotTimer);
+            rotTimer = null;
+            if (autoRot) {
+                rotTimer = setInterval(function() {
+                    if (drag === false && autoRot === true) {
+                        rotY += 0.2;
+                        frame();
+                    }
+                }, 50);
+            }
         });
     }
 
-    toggleSpin(on) {
-        if(this.spinTimer) clearInterval(this.spinTimer);
-        if(on) {
-            this.spinTimer = setInterval(() => {
-                if(!this.dragging && this.autoSpin) {
-                    this.spin.y += 0.2;
-                    this.doFrame();
-                }
-            }, 50);
+    function wireMouse() {
+        var node = cvs.node();
+        var canvasSel = d3.select(node);
+        var winSel = d3.select(window);
+
+        function handleDown(ev) {
+            if (autoRot) return;
+            ev.preventDefault();
+            drag = true;
+            var x = ev.clientX, y = ev.clientY;
+            if (ev.touches) { x = ev.touches[0].clientX; y = ev.touches[0].clientY; }
+            lastX = x; lastY = y; startX = x; startY = y; tDown = Date.now();
+            node.style.cursor = "grabbing";
         }
-    }
 
-    doFrame() {
-        if(this.raf) return;
-        this.raf = requestAnimationFrame(() => {
-            this.proj.rotate([this.spin.y, -this.spin.x]);
-            this.svg.selectAll("path").attr("d", this.path);
-            this.update();
-            this.raf = null;
-        });
-    }
-
-    // --- Interaction ---
-
-    bindMouse() {
-        let el = this.cvs.node();
-        
-        // Mouse Down
-        const down = (e) => {
-            if(this.autoSpin) return;
-            e.preventDefault();
-            this.dragging = true;
-            let x = e.clientX || (e.touches && e.touches[0].clientX);
-            let y = e.clientY || (e.touches && e.touches[0].clientY);
-            this.lastMouse = {x, y};
-            this.dragStart = {x, y};
-            this.clickTime = Date.now();
-            el.style.cursor = "grabbing";
-        };
-
-        // Mouse Move
-        const move = (e) => {
-            if(this.autoSpin) return;
-            
-            // Hover check
-            if(!this.dragging) {
-                let r = el.getBoundingClientRect();
-                let mx = e.clientX - r.left;
-                let my = e.clientY - r.top;
-                let hit = this.points.find(p => Math.hypot(mx-p.x, my-p.y) < 10);
-                el.style.cursor = hit ? "pointer" : "default";
+        function handleMove(ev) {
+            if (autoRot) return;
+            if (!drag) {
+                var r = node.getBoundingClientRect();
+                var mx = ev.clientX - r.left, my = ev.clientY - r.top;
+                if (ev.touches) { mx = ev.touches[0].clientX - r.left; my = ev.touches[0].clientY - r.top; }
+                var over = null, i, h;
+                for (i = 0; i < hitList.length; i++) {
+                    h = hitList[i];
+                    if ((mx - h.x)*(mx - h.x) + (my - h.y)*(my - h.y) < 100) { over = h; break; }
+                }
+                node.style.cursor = over ? "pointer" : "default";
                 return;
             }
-            
-            e.preventDefault();
-            let x = e.clientX || (e.touches && e.touches[0].clientX);
-            let y = e.clientY || (e.touches && e.touches[0].clientY);
-            
-            let dx = x - this.lastMouse.x;
-            let dy = y - this.lastMouse.y;
-            
-            this.spin.y += dx * 0.5;
-            this.spin.x = Math.max(-90, Math.min(90, this.spin.x + dy*0.5));
-            
-            this.lastMouse = {x, y};
-            this.doFrame();
-        };
+            ev.preventDefault();
+            var x = ev.clientX, y = ev.clientY;
+            if (ev.touches) { x = ev.touches[0].clientX; y = ev.touches[0].clientY; }
+            rotY += (x - lastX) * 0.5;
+            rotX += (y - lastY) * 0.5;
+            if (rotX > 90) rotX = 90; else if (rotX < -90) rotX = -90;
+            lastX = x; lastY = y;
+            frame();
+        }
 
-        // Mouse Up
-        const up = (e) => {
-            if(!this.dragging) return;
-            this.dragging = false;
-            el.style.cursor = "default";
-            
-            let x = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
-            let y = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
-            let dist = Math.hypot(x - this.dragStart.x, y - this.dragStart.y);
-            
-            // If it was a short click without much movement
-            if(dist < 5 && (Date.now() - this.clickTime) < 300) {
-                this.onClick(e);
-            }
-        };
+        function handleUp(ev) {
+            if (!drag) return;
+            drag = false;
+            node.style.cursor = "default";
+            var x = ev.clientX, y = ev.clientY;
+            if (ev.changedTouches) { x = ev.changedTouches[0].clientX; y = ev.changedTouches[0].clientY; }
+            var dx = x - startX, dy = y - startY;
+            if (dx*dx + dy*dy < 25 && (Date.now() - tDown) < 300) clickAt(ev);
+        }
 
-        // Zoom
-        const wheel = (e) => {
-            if(this.autoSpin) return;
-            e.preventDefault();
-            let s = this.proj.scale();
-            s = e.deltaY > 0 ? s * 0.9 : s * 1.1;
-            if(s < 150) s = 150;
-            if(s > 600) s = 600;
-            this.proj.scale(s);
-            this.doFrame();
-        };
+        function handleWheel(ev) {
+            if (autoRot) return;
+            ev.preventDefault();
+            var s = proj.scale();
+            s = ev.deltaY > 0 ? s * 0.9 : s * 1.1;
+            if (s < 150) s = 150; else if (s > 600) s = 600;
+            proj.scale(s);
+            frame();
+        }
 
-        d3.select(el)
-            .on("mousedown", down)
-            .on("touchstart", down)
-            .on("wheel", wheel);
-            
-        d3.select(window)
-            .on("mousemove", move)
-            .on("touchmove", move)
-            .on("mouseup", up)
-            .on("touchend", up);
-            
-        d3.select("#prev-crash").on("click", () => this.nav(-1));
-        d3.select("#next-crash").on("click", () => this.nav(1));
+        canvasSel.on("mousedown", handleDown);
+        canvasSel.on("touchstart", handleDown);
+        canvasSel.on("wheel", handleWheel);
+        winSel.on("mousemove", handleMove);
+        winSel.on("touchmove", handleMove);
+        winSel.on("mouseup", handleUp);
+        winSel.on("touchend", handleUp);
+        d3.select("#prev-crash").on("click", function() { navSel(-1); });
+        d3.select("#next-crash").on("click", function() { navSel(1); });
     }
 
-    onClick(e) {
-        let rect = this.cvs.node().getBoundingClientRect();
-        let cx = (e.clientX || e.changedTouches[0].clientX) - rect.left;
-        let cy = (e.clientY || e.changedTouches[0].clientY) - rect.top;
-        
-        let best = null;
-        let minDist = 15;
-        
-        // Find closest point
-        for(let p of this.points) {
-            let d = Math.hypot(cx - p.x, cy - p.y);
-            if(d < minDist) {
-                minDist = d;
-                best = p;
-            }
+    function clickAt(ev) {
+        var rect = cvs.node().getBoundingClientRect();
+        var cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+        if (ev.changedTouches) { cx = ev.changedTouches[0].clientX - rect.left; cy = ev.changedTouches[0].clientY - rect.top; }
+        var best = null, bestD = 15, i, d, j, a;
+        for (i = 0; i < hitList.length; i++) {
+            d = Math.sqrt((cx - hitList[i].x)*(cx - hitList[i].x) + (cy - hitList[i].y)*(cy - hitList[i].y));
+            if (d < bestD) { bestD = d; best = hitList[i]; }
         }
-        
-        if(best) {
-            // Find all crashes at this location
-            this.selCrashes = this.active.filter(a => 
-                a.lat === best.data.lat && a.lon === best.data.lon
-            ).sort((a,b) => b.dead - a.dead);
-            this.selIndex = 0;
-            this.showInfo();
+        if (best) {
+            selected = [];
+            for (j = 0; j < byYear.length; j++) {
+                a = byYear[j];
+                if (a.lat === best.d.lat && a.lon === best.d.lon) selected.push(a);
+            }
+            selected.sort(function(aa, bb) { return bb.dead - aa.dead; });
+            selIdx = 0;
+            showSel();
         } else {
-            this.selCrashes = [];
+            selected = [];
             d3.select("#crash-info-box").classed("active", false);
         }
-        this.render();
+        repaint();
     }
 
-    nav(dir) {
-        let n = this.selCrashes.length;
-        if(n < 2) return;
-        this.selIndex += dir;
-        if(this.selIndex < 0) this.selIndex = 0;
-        if(this.selIndex >= n) this.selIndex = n-1;
-        this.showInfo();
+    function navSel(dir) {
+        if (selected.length < 2) return;
+        selIdx = selIdx + dir;
+        if (selIdx < 0) selIdx = 0;
+        if (selIdx > selected.length - 1) selIdx = selected.length - 1;
+        showSel();
     }
 
-    showInfo() {
-        let c = this.selCrashes[this.selIndex];
-        let box = d3.select("#crash-info-box");
-        let content = box.select(".info-box-content");
-        
-        box.classed("active", true);
-        
-        let html = `
-            <div class="crash-details">
-                <div class="crash-title">Crash ${this.selIndex+1} of ${this.selCrashes.length}</div>
-                <div class="crash-detail-item"><b>Date:</b> ${c.year}</div>
-                <div class="crash-detail-item"><b>Loc:</b> ${c.loc}</div>
-                <div class="crash-detail-item"><b>Op:</b> ${c.op}</div>
-                <div class="crash-detail-item"><b>Fatalities:</b> ${c.dead}</div>
-            </div>`;
-        content.html(html);
+    function showSel() {
+        var c = selected[selIdx];
+        var info = d3.select("#crash-info-box");
+        info.classed("active", true);
+        var inner = info.select(".info-box-content");
+        inner.html(
+            '<div class="crash-details">' +
+            '<div class="crash-title">Crash ' + (selIdx+1) + ' of ' + selected.length + '</div>' +
+            '<div class="crash-detail-item"><b>Date:</b> ' + c.year + '</div>' +
+            '<div class="crash-detail-item"><b>Loc:</b> ' + c.loc + '</div>' +
+            '<div class="crash-detail-item"><b>Op:</b> ' + c.op + '</div>' +
+            '<div class="crash-detail-item"><b>Fatalities:</b> ' + c.dead + '</div></div>'
+        );
     }
-}
 
-// Global init for debugging
-window.vizApp = new GlobeApp("#globe-container");
+    var worldUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+    var csvUrl = "data/Plane_Crashes_with_Coordinates.csv";
+    Promise.all([d3.json(worldUrl), d3.csv(csvUrl)]).then(function(res) {
+        parseCSV(res[1]);
+        drawMap(res[0]);
+        applyYear();
+        wireControls();
+        wireMouse();
+        if (rotTimer) clearInterval(rotTimer);
+        rotTimer = setInterval(function() {
+            if (!drag && autoRot) { rotY += 0.2; frame(); }
+        }, 50);
+    }).catch(function(e) { console.error("Load error:", e); });
+
+    window.vizApp = {};
+    Object.defineProperty(window.vizApp, "year", { get: function() { return yearNow; } });
+    Object.defineProperty(window.vizApp, "data", { get: function() { return crashes; } });
+    Object.defineProperty(window.vizApp, "filtered", { get: function() { return byYear; } });
+})();
