@@ -24,6 +24,22 @@ export function render(svg, data) {
     const colorScale = d3.scaleSequential(d3.interpolatePurples)
         .domain([0, d3.max(data, d => d.crashes)]);
 
+    // flight path line
+    const lineGenerator = d3.line()
+        .x((d, i) => xScale(i))
+        .y((d, i) => baseline - (Math.sin(archScale(i) * Math.PI / 2) * peakHeight))
+        .curve(d3.curveCatmullRom.alpha(0.5));
+
+    svg.append("path")
+        .datum(data)
+        .attr("d", lineGenerator)
+        .attr("fill", "none")
+        .attr("stroke", "white")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "8,4")
+        .attr("opacity", 0.3);
+
+    // circle data points
     const circles = svg.selectAll(".phase-circle")
         .data(data)
         .enter()
@@ -38,7 +54,7 @@ export function render(svg, data) {
     circles.append("circle")
         .attr("r", d => radiusScale(d.crashes))
         .attr("fill", d => colorScale(d.crashes))
-        .attr("opacity", 0.7)
+        .attr("opacity", 1)
         .attr("stroke", "#333")
         .attr("stroke-width", 2);
 
