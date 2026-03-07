@@ -349,3 +349,8 @@ body{
     cursor: not-allowed;
 }
 .globe-viz .nav-info { font-weight: 600; color: var(--muted); font-size: 0.9em; }
+
+.axis-label {
+    color: var(--text);
+    fill: var(--text);
+}
