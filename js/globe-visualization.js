@@ -1,4 +1,4 @@
-var W = 960, H = 600;
+var W = 480, H = 420;
 
 (function() {
     var box = d3.select("#globe-container");
@@ -13,18 +13,18 @@ var W = 960, H = 600;
     var ctx = cvs.node().getContext("2d");
 
     var proj = d3.geoOrthographic();
-    proj.scale(300);
+    proj.scale(190);
     proj.translate([W/2, H/2]);
     proj.clipAngle(90);
     var path = d3.geoPath().projection(proj);
 
-    var yearNow = 2023, playing = false, speed = 1, autoRot = true;
+    var yearNow = 2023, playing = false, speed = 1;
     var rotX = 0, rotY = 0;
     var drag = false;
     var lastX = 0, lastY = 0, startX = 0, startY = 0, tDown = 0;
     var crashes = [], byYear = [], hitList = [], selected = [];
     var selIdx = 0;
-    var playTimer = null, rotTimer = null, raf = null;
+    var playTimer = null, raf = null;
     var yearRange = { lo: 1900, hi: 2023 };
 
     function parseCSV(rows) {
@@ -62,15 +62,24 @@ var W = 960, H = 600;
         var g = svg.append("g");
         var paths = g.selectAll("path").data(feats);
         paths.enter().append("path");
-        g.selectAll("path").attr("d", path).attr("fill", "#1a1a2e").attr("stroke", "#16213e").attr("stroke-width", 0.8);
+        g.selectAll("path")
+            .attr("d", path)
+            .attr("fill", "#e8e2d9")
+            .attr("stroke", "#c4b9a5")
+            .attr("stroke-width", 0.8);
         var grat = d3.geoGraticule();
         var gratPath = svg.append("path");
         gratPath.datum(grat).attr("d", path).attr("fill", "none");
-        gratPath.attr("stroke", "rgba(255,255,255,0.15)").attr("stroke-width", 0.5);
+        gratPath
+            .attr("stroke", "rgba(92,86,77,0.25)")
+            .attr("stroke-width", 0.5);
         var sc = proj.scale();
         var circ = svg.append("circle");
         circ.attr("cx", W/2).attr("cy", H/2).attr("r", sc);
-        circ.attr("fill", "none").attr("stroke", "rgba(255,255,255,0.4)").attr("stroke-width", 2);
+        circ
+            .attr("fill", "none")
+            .attr("stroke", "#c4b9a5")
+            .attr("stroke-width", 2);
     }
 
     function getHeatCells() {
@@ -185,6 +194,13 @@ var W = 960, H = 600;
         for (var i = 0; i < crashes.length; i++) if (crashes[i].year <= yearNow) byYear.push(crashes[i]);
         d3.select("#crash-count").text(byYear.length);
         repaint();
+        if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+            try {
+                window.dispatchEvent(new CustomEvent("viz-year-change", { detail: { year: yearNow } }));
+            } catch (e) {
+                // ignore if CustomEvent is not supported
+            }
+        }
     }
 
     function frame() {
@@ -221,6 +237,7 @@ var W = 960, H = 600;
             playBtn.text(playing ? "Pause" : "Play");
             if (playing) {
                 var step = 1000 / speed;
+                if (playTimer) clearInterval(playTimer);
                 playTimer = setInterval(function() {
                     if (yearNow >= yearRange.hi) yearNow = yearRange.lo;
                     else yearNow++;
@@ -236,6 +253,18 @@ var W = 960, H = 600;
         d3.select("#speed-slider").on("input", function() {
             speed = parseFloat(this.value, 10);
             d3.select("#speed-display").text(speed.toFixed(1));
+            // If currently playing, update the timer without resetting the year
+            if (playing) {
+                if (playTimer) clearInterval(playTimer);
+                var step = 1000 / speed;
+                playTimer = setInterval(function() {
+                    if (yearNow >= yearRange.hi) yearNow = yearRange.lo;
+                    else yearNow++;
+                    slider.property("value", yearNow);
+                    disp.text(yearNow);
+                    frame();
+                }, step);
+            }
         });
 
         d3.select("#reset").on("click", function() {
@@ -248,21 +277,6 @@ var W = 960, H = 600;
             frame();
         });
 
-        var autoBtn = d3.select("#auto-rotate-btn");
-        autoBtn.on("click", function() {
-            autoRot = !autoRot;
-            autoBtn.text(autoRot ? "Stop Auto-Rotate" : "Start Auto-Rotate");
-            if (rotTimer) clearInterval(rotTimer);
-            rotTimer = null;
-            if (autoRot) {
-                rotTimer = setInterval(function() {
-                    if (drag === false && autoRot === true) {
-                        rotY += 0.2;
-                        frame();
-                    }
-                }, 50);
-            }
-        });
     }
 
     function wireMouse() {
@@ -271,7 +285,6 @@ var W = 960, H = 600;
         var winSel = d3.select(window);
 
         function handleDown(ev) {
-            if (autoRot) return;
             ev.preventDefault();
             drag = true;
             var x = ev.clientX, y = ev.clientY;
@@ -281,7 +294,6 @@ var W = 960, H = 600;
         }
 
         function handleMove(ev) {
-            if (autoRot) return;
             if (!drag) {
                 var r = node.getBoundingClientRect();
                 var mx = ev.clientX - r.left, my = ev.clientY - r.top;
@@ -315,7 +327,6 @@ var W = 960, H = 600;
         }
 
         function handleWheel(ev) {
-            if (autoRot) return;
             ev.preventDefault();
             var s = proj.scale();
             s = ev.deltaY > 0 ? s * 0.9 : s * 1.1;
@@ -374,13 +385,28 @@ var W = 960, H = 600;
         info.classed("active", true);
         var inner = info.select(".info-box-content");
         inner.html(
+            '<button type="button" class="crash-close" aria-label="Clear selection">×</button>' +
             '<div class="crash-details">' +
-            '<div class="crash-title">Crash ' + (selIdx+1) + ' of ' + selected.length + '</div>' +
+            '<div class="crash-navigation">' +
+            '<button type="button" class="nav-button" id="prev-crash">Previous</button>' +
+            '<span class="nav-info">Crash ' + (selIdx+1) + ' of ' + selected.length + '</span>' +
+            '<button type="button" class="nav-button" id="next-crash">Next</button>' +
+            '</div>' +
+            '<div class="crash-title">Crash details</div>' +
             '<div class="crash-detail-item"><b>Date:</b> ' + c.year + '</div>' +
             '<div class="crash-detail-item"><b>Loc:</b> ' + c.loc + '</div>' +
             '<div class="crash-detail-item"><b>Op:</b> ' + c.op + '</div>' +
             '<div class="crash-detail-item"><b>Fatalities:</b> ' + c.dead + '</div></div>'
         );
+        inner.select("#prev-crash").on("click", function() { navSel(-1); });
+        inner.select("#next-crash").on("click", function() { navSel(1); });
+        inner.select(".crash-close").on("click", function() {
+            selected = [];
+            selIdx = 0;
+            info.classed("active", false);
+            inner.html('<p class="info-placeholder">Click on a crash point to see details</p>');
+            repaint();
+        });
     }
 
     var worldUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -391,14 +417,45 @@ var W = 960, H = 600;
         applyYear();
         wireControls();
         wireMouse();
-        if (rotTimer) clearInterval(rotTimer);
-        rotTimer = setInterval(function() {
-            if (!drag && autoRot) { rotY += 0.2; frame(); }
-        }, 50);
-    }).catch(function(e) { console.error("Load error:", e); });
 
-    window.vizApp = {};
-    Object.defineProperty(window.vizApp, "year", { get: function() { return yearNow; } });
-    Object.defineProperty(window.vizApp, "data", { get: function() { return crashes; } });
-    Object.defineProperty(window.vizApp, "filtered", { get: function() { return byYear; } });
+        if (typeof window !== "undefined") {
+            window.vizApp = {};
+            Object.defineProperty(window.vizApp, "year", { get: function() { return yearNow; } });
+            Object.defineProperty(window.vizApp, "data", { get: function() { return crashes; } });
+            Object.defineProperty(window.vizApp, "filtered", { get: function() { return byYear; } });
+
+            window.addEventListener("timeline-select-crash", function(ev) {
+                var d = ev && ev.detail;
+                if (!d || !crashes.length) return;
+                // Move globe time to this crash's year
+                yearNow = d.year;
+                var slider = d3.select("#year-slider");
+                var disp = d3.select("#year-display");
+                if (!slider.empty()) slider.property("value", yearNow);
+                if (!disp.empty()) disp.text(yearNow);
+                applyYear();
+
+                // Collect all crashes at this exact lat/lon for this year
+                selected = [];
+                for (var i = 0; i < byYear.length; i++) {
+                    var c = byYear[i];
+                    if (c.year === d.year &&
+                        Math.abs(c.lat - d.lat) < 1e-3 &&
+                        Math.abs(c.lon - d.lon) < 1e-3) {
+                        selected.push(c);
+                    }
+                }
+                if (!selected.length) return;
+                selected.sort(function(a, b) { return b.dead - a.dead; });
+                selIdx = 0;
+
+                // Rotate globe so this point is centered
+                rotY = -d.lon;
+                rotX = d.lat;
+                if (rotX > 90) rotX = 90; else if (rotX < -90) rotX = -90;
+                frame();
+                showSel();
+            });
+        }
+    }).catch(function(e) { console.error("Load error:", e); });
 })();
