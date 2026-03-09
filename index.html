@@ -24,15 +24,14 @@
 </header>
 
 <main class="main-container">
-    <section class="viz-section">
-        <h2>What are the primary causes of air crashes?</h2>
-        <figure class="viz-figure">
-            <img class="viz-img" src="images/sketches/primary_causes.png"
-                 alt="A visualization sketch of the primary causes of air crashes">
-        </figure>
-        <p class="viz-desc">DESCRIPTION</p>
+    <section class="viz-section" style="position:relative;">
+       <h2>What are the primary causes of air crashes?</h2>
+       <div id="causes-chart" style="width:100%;min-height:520px;position:relative;"></div>
+       <p class="viz-desc">
+           Each bubble represents a root-cause category assigned to crashes in the dataset.
+           Bubble size reflects the number of crashes. Hover to see the exact count and overall share.
+       </p>
     </section>
-
     <section class="viz-section globe-viz">
         <h2>Where do planes crash?</h2>
         <p class="viz-desc">Historical plane crash data on a 3D globe with coordinate-based heat map. Use the year slider or Play to animate over time; click a point for details.</p>
