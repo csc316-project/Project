@@ -1,6 +1,7 @@
 import * as render_jar from './jar_viz.js';
 import * as phases from './phases_crashes.js';
 import * as crash_vs_year from './crash_vs_year.js';
+import { render } from './primary-causes.js';
 
 let svg_phases = d3.select("#phases-chart")
     .append("svg")
@@ -33,6 +34,12 @@ d3.csv("data/plane_crashes.csv").then(csv => {
     render_jar.render_jar(svg_jar, csv);
     crash_vs_year.render(svg_crash_vs_year, csv);
 });
+
+d3.csv("data/plane_crashes.csv").then(csv => {
+   const container = d3.select("#causes-chart");
+   render(container, csv);
+});
+
 
 d3.csv("data/phase_crashes.csv").then(csv => {
     csv.forEach(d => {
