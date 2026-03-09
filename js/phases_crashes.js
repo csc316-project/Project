@@ -6,6 +6,8 @@ export function render(svg, data) {
     const baseline = height - margin; // y coordinate for ground
     const peakHeight = height * 0.6; // highest point for the arch
 
+    svg.selectAll("*").remove();
+
     const cruiseIndex = data.findIndex(d => d.flight_phase.includes("Cruise"));
 
     const xScale = d3.scaleLinear()
@@ -64,12 +66,42 @@ export function render(svg, data) {
         .attr("dy", d => radiusScale(d.crashes) + 20)
         .style("fill", "white");
 
-    svg.append("image")
+    const airplane = svg.append("image")
         .attr("xlink:href", "images/airplane.png")
-        .attr("x", xScale(0) - 50)
-        .attr("y", baseline - 50)
         .attr("width", 40)
-        .attr("height", 40);
+        .attr("height", 40)
+        .attr("x", -20)
+        .attr("y", -20)
+        .style("filter", "brightness(0) invert(1)")
+        .attr("transform", `translate(${xScale(0)}, ${baseline})`);
+
+    const startFlight = () => {
+        airplane.transition()
+            .duration(15000)
+            .ease(d3.easeQuadInOut)
+            .attrTween("transform", function() {
+                return function(t) {
+                    const i = t * (data.length - 1);
+                    const x = xScale(i);
+                    const y = baseline - (Math.sin(archScale(i) * Math.PI / 2) * peakHeight);
+
+                    const angle = i < cruiseIndex ? -15 : (i > cruiseIndex + 0.5 ? 15 : 0);
+
+                    return `translate(${x}, ${y}) rotate(${angle})`;
+                };
+            });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                startFlight();
+                observer.unobserve(entry.target); // Play only once
+            }
+        });
+    }, { threshold: 0.5 }); // Starts when 50% of the SVG is visible
+
+    observer.observe(svg.node());
 }
 
 
