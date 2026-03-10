@@ -3,6 +3,7 @@ import * as phases from './phases_crashes.js';
 import * as timeline from './timeline.js';
 import * as causes from './causes.js';
 import { render } from './primary-causes.js';
+import * as airplaneHeatmap from './airplane_heatmap.js';
 
 var svg_phases = d3.select("#phases-chart")
     .append("svg")
@@ -15,6 +16,14 @@ var svg_jar = d3.select("#jar-viz")
     .attr("height", 900)
     .style("max-width", "100%")
     .attr("text-anchor", "middle");
+
+var svg_airplane = d3.select("#airplane-heatmap")
+    .append("svg")
+    .attr("width", 700)
+    .attr("height", 900)
+    .style("max-width", "100%")
+    .style("display", "block")
+    .style("margin", "-20px auto 0 auto");
 
 // Data that has coordinates (same CSV as globe) — for timeline and causes
 d3.csv("data/Plane_Crashes_with_Coordinates.csv").then(function(rows) {
@@ -37,3 +46,7 @@ d3.csv("data/phase_crashes.csv").then(function(csv) {
     csv.forEach(function(d) { d.crashes = +d.crashes; });
     phases.render(svg_phases, csv);
 }).catch(function(e) { console.error("Phases load error:", e); });
+
+d3.csv("data/airplane_survivors.csv").then(function(csv) {
+    airplaneHeatmap.render(svg_airplane, csv);
+}).catch(function(e) { console.error("Airplane heatmap load error:", e); });

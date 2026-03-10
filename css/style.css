@@ -563,3 +563,12 @@ body {
     color: var(--text);
     fill: var(--text);
 }
+
+/* ========== Airplane Survivor Heatmap ========== */
+#airplane-heatmap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 0;
+}
