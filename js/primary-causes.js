@@ -1,12 +1,12 @@
 export function render(container, data) {
    const width = container.node().getBoundingClientRect().width || 860;
    const palette = {
-       "Unknown":           { fill: "#1e293b", stroke: "#64748b", text: "#94a3b8" },
-       "Technical failure": { fill: "#1e3a5f", stroke: "#3b82f6", text: "#7dd3fc" },
-       "Human factor":      { fill: "#3b1d1d", stroke: "#f87171", text: "#fca5a5" },
-       "Weather":           { fill: "#1a3329", stroke: "#34d399", text: "#6ee7b7" },
-       "Other causes":      { fill: "#2d1f42", stroke: "#a78bfa", text: "#c4b5fd" },
-       "Terrorism act, Hijacking, Sabotage":  { fill: "#4a3c23", stroke: "#fae08b", text: "#fde6b5" }
+       "Unknown":           { fill: "#1e293b", stroke: "#64748b", text: "#0d1829" },
+       "Technical failure": { fill: "#1e3a5f", stroke: "#3b82f6", text: "#0d1829" },
+       "Human factor":      { fill: "#3b1d1d", stroke: "#f87171", text: "#0d1829" },
+       "Weather":           { fill: "#1a3329", stroke: "#34d399", text: "#0d1829" },
+       "Other causes":      { fill: "#2d1f42", stroke: "#a78bfa", text: "#0d1829" },
+       "Terrorism act, Hijacking, Sabotage":  { fill: "#4a3c23", stroke: "#fae08b", text: "#0d1829" }
    };
    const counts = d3.rollup(data, v => v.length, d => d["Crash cause"] || "Unknown");
    const total  = d3.sum(counts.values());
@@ -16,9 +16,7 @@ export function render(container, data) {
        color: palette[cause] || palette["Unknown"],
    })).sort((a, b) => b.count - a.count);
 
-
    const n = sorted.length;
-
 
    const rScale = d3.scaleSqrt()
        .domain([0, d3.max(sorted, d => d.count)])
@@ -32,7 +30,7 @@ export function render(container, data) {
    const nodes = arcSlots;
    const arcSpread = Math.PI * 0.9;
    const step      = arcSpread / (n - 1);
-   let minArcR = 160;
+   let minArcR = 140;
    for (let i = 0; i < n - 1; i++) {
        const gap    = nodes[i].r + nodes[i + 1].r + 22;
        const needed = gap / (2 * Math.sin(step / 2));
