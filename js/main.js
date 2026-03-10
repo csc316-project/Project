@@ -1,5 +1,7 @@
 import * as render_jar from './jar_viz.js';
 import * as phases from './phases_crashes.js';
+import * as crash_vs_year from './crash_vs_year.js';
+import * as weather_viz from './weather_viz.js';
 import * as timeline from './timeline.js';
 import * as causes from './causes.js';
 import { render } from './primary-causes.js';
@@ -22,6 +24,14 @@ var svg_airplane = d3.select("#airplane-heatmap")
     .attr("width", 700)
     .attr("height", 900)
     .style("max-width", "100%")
+    .attr("text-anchor", "middle");
+
+let svg_weather = d3.select("#weather-viz")
+    .append("svg")
+    .attr("width", 800)
+    .attr("height", 350)
+    .style("max-width", "100%");
+
     .style("display", "block")
     .style("margin", "-20px auto 0 auto");
 
@@ -45,6 +55,11 @@ d3.csv("data/plane_crashes.csv").then(csv => {
 d3.csv("data/phase_crashes.csv").then(function(csv) {
     csv.forEach(function(d) { d.crashes = +d.crashes; });
     phases.render(svg_phases, csv);
+});
+
+d3.csv("data/weather_crashes.csv").then(csv => {
+    weather_viz.render(svg_weather, csv);
+});
 }).catch(function(e) { console.error("Phases load error:", e); });
 
 d3.csv("data/airplane_survivors.csv").then(function(csv) {
