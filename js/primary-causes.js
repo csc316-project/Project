@@ -38,7 +38,7 @@ export function render(container, data) {
        const needed = gap / (2 * Math.sin(step / 2));
        minArcR = Math.max(minArcR, needed);
    }
-   const arcR   = minArcR * 1.0;
+   const arcR   = minArcR * 0.94;
    const ySquish = 1.1;
    const planeX = width / 2;
    const planeY = 500;
@@ -171,7 +171,7 @@ export function render(container, data) {
        .attr("dominant-baseline", "central")
        .attr("font-size", "60px")
        .text("✈")
-       .attr("fill", "rgb(230,225,225)")
+       .attr("fill", "rgb(13,24,41)")
        .style("filter", "drop-shadow(0 0 12px rgba(125,211,252,0.4))");
 
 
