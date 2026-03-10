@@ -1,22 +1,23 @@
+// Font Awesome Airplane Icon (plane-up)
+// License: CC BY 4.0 (https://fontawesome.com/license/free)
+// Source: https://fontawesome.com/icons/plane-up
+const AIRPLANE_PATH = "M482.3 192c34.2 0 93.7 29 93.7 64c0 36-59.5 64-93.7 64l-116.6 0L265.2 495.9c-5.7 10-16.3 16.1-27.8 16.1l-56.2 0c-10.6 0-18.3-10.2-15.4-20.4l49-171.6L112 320 68.8 377.6c-3 4-7.8 6.4-12.8 6.4l-42 0c-7.8 0-14-6.3-14-14c0-1.3 .2-2.6 .5-3.9L32 256 .5 145.9c-.4-1.3-.5-2.6-.5-3.9c0-7.8 6.3-14 14-14l42 0c5 0 9.8 2.4 12.8 6.4L112 192l102.9 0-49-171.6C162.9 10.2 170.6 0 181.2 0l56.2 0c11.5 0 22.1 6.2 27.8 16.1L365.7 192l116.6 0z";
+
 export function render(svg, data) {
     console.log(`SVG id: ${svg.attr('id')}`);
     console.log(`Data rows: ${data.length}`);
     
-    // Dimensions
     const containerHeight = 900;
     const containerWidth = 700;
     const planeCenterX = 350;
 
-    // Clear any existing content
     svg.selectAll("*").remove();
 
-    // Set SVG dimensions and viewBox for proper scaling
     svg.attr("width", containerWidth)
        .attr("height", containerHeight)
        .attr("viewBox", `0 0 ${containerWidth} ${containerHeight}`)
        .attr("preserveAspectRatio", "xMidYMid meet");
 
-    // Simple tooltip - create or select
     let tooltip = d3.select("body").select(".airplane-tooltip-simple");
     if (tooltip.empty()) {
         tooltip = d3.select("body")
@@ -37,10 +38,8 @@ export function render(svg, data) {
             .style("backdrop-filter", "blur(10px)");
     }
 
-    // Create main SVG group for heatmap
     const mainGroup = svg.append("g");
 
-    // Define sections as horizontal zones
     const sections = [
         { 
             section: "Cockpit", 
@@ -80,7 +79,6 @@ export function render(svg, data) {
         }
     ];
 
-    // Calculate fatality scores
     const totalSurvivors = sections.reduce((sum, d) => sum + d.survivors, 0);
     const maxSurvivors = Math.max(...sections.map(d => d.survivors));
     
@@ -95,7 +93,6 @@ export function render(svg, data) {
         .domain([0, 1])
         .interpolator(t => d3.interpolateRgb("#FFEB3B", "#B71C1C")(t));
 
-    // Create heatmap zones with mask
     const defsGroup = mainGroup.append("defs");
     const maskDef = defsGroup.append("mask")
         .attr("id", `airplane-mask-${Math.random().toString(36).substr(2, 9)}`)
@@ -105,28 +102,23 @@ export function render(svg, data) {
         .attr("width", containerWidth)
         .attr("height", containerHeight);
 
-    // Add plane shape to mask using Font Awesome plane SVG path
-    // Original viewBox is 0 0 576 512, we rotate -90 and scale to fit
     const planeScale = 1.4;
     const planeOffsetX = containerWidth / 2;
-    const planeOffsetY = containerHeight / 2 + 30; // Shift down to prevent top clipping
+    const planeOffsetY = containerHeight / 2 + 30;
     
     maskDef.append("path")
         .attr("fill", "white")
-        .attr("d", "M482.3 192c34.2 0 93.7 29 93.7 64c0 36-59.5 64-93.7 64l-116.6 0L265.2 495.9c-5.7 10-16.3 16.1-27.8 16.1l-56.2 0c-10.6 0-18.3-10.2-15.4-20.4l49-171.6L112 320 68.8 377.6c-3 4-7.8 6.4-12.8 6.4l-42 0c-7.8 0-14-6.3-14-14c0-1.3 .2-2.6 .5-3.9L32 256 .5 145.9c-.4-1.3-.5-2.6-.5-3.9c0-7.8 6.3-14 14-14l42 0c5 0 9.8 2.4 12.8 6.4L112 192l102.9 0-49-171.6C162.9 10.2 170.6 0 181.2 0l56.2 0c11.5 0 22.1 6.2 27.8 16.1L365.7 192l116.6 0z")
+        .attr("d", AIRPLANE_PATH)
         .attr("transform", `translate(${planeOffsetX}, ${planeOffsetY}) rotate(-90) scale(${planeScale}) translate(-288, -256)`);
     
     const maskId = maskDef.attr("id");
 
-    // Create masked group for colored rectangles
     const maskedGroup = mainGroup.append("g")
         .attr("mask", `url(#${maskId})`);
 
-    // Create heatmap zones as rectangles
     sections.forEach((section, i) => {
         const sectionColor = colorScale(section.fatalityScore);
         
-        // Create rectangle zone
         maskedGroup.append("rect")
             .attr("x", 0)
             .attr("y", section.y)
@@ -135,18 +127,16 @@ export function render(svg, data) {
             .attr("fill", sectionColor);
     });
 
-    // Create overlay group for labels and interactions
     const labelGroup = mainGroup.append("g");
 
     sections.forEach((section, i) => {
         const labelY = section.y + section.height / 2;
         
-        // Create a group for each section's labels with tooltip interactions
         const sectionGroup = labelGroup.append("g")
             .attr("class", "zone-interactive")
             .style("cursor", "pointer");
         
-        // Add invisible rect behind text for easier hovering
+        // Invisible rect for easier hovering
         sectionGroup.append("rect")
             .attr("x", planeCenterX - 100)
             .attr("y", section.y)
@@ -154,7 +144,6 @@ export function render(svg, data) {
             .attr("height", section.height)
             .attr("fill", "transparent")
             .on("mouseover", function(event) {
-                // Show tooltip with enhanced HTML
                 tooltip
                     .html(
                         `<div style="font-size: 16px; font-weight: 700; color: #c45c26; margin-bottom: 10px; border-bottom: 1px solid rgba(196, 92, 38, 0.3); padding-bottom: 6px;">${section.section}</div>` +
@@ -166,7 +155,6 @@ export function render(svg, data) {
                     .style("top", (event.pageY - 40) + "px")
                     .style("opacity", "1");
                 
-                // Animate text with smooth transitions and glowing effect
                 sectionGroup.selectAll("text")
                     .transition()
                     .duration(200)
@@ -179,10 +167,8 @@ export function render(svg, data) {
                     .style("top", (event.pageY - 30) + "px");
             })
             .on("mouseout", function() {
-                // Hide tooltip
                 tooltip.style("opacity", "0");
                 
-                // Reset text with smooth transition
                 sectionGroup.selectAll("text")
                     .transition()
                     .duration(200)
@@ -217,7 +203,6 @@ export function render(svg, data) {
             .text(`${section.survivors} survivors`);
     });
     
-    // Create legend below the plane
     const legendContainer = d3.select(svg.node().parentNode)
         .append("div")
         .style("margin-top", "-60px")
