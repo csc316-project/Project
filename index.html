@@ -4,38 +4,49 @@
     <meta charset="utf-8">
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Team Flightrisk - CSC316</title>
-
-    <!-- Load CSS libraries -->
+    <title>Dear Data: Flight Risk — CSC316</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="page-scale">
 <header class="site-header">
     <div class="main-container">
         <div class="header-row">
             <div>
-                <h1 class="title">Team Flight Risk</h1>
-                <p class="subtitle">A visual exploration of where, when, and why aviation incidents occur.</p>
+                <p class="kicker">Dear Data</p>
+                <h1 class="title">Flight Risk</h1>
+                <p class="subtitle">One dataset. Many stories. We drew where, when, and why planes have crashed—like sending postcards from the data.</p>
             </div>
         </div>
     </div>
 </header>
 
 <main class="main-container">
-    <section class="viz-section">
+    <p class="story-intro">This project is a visual correspondence with aviation incident data. Each section is a “postcard”: a question we asked of the data and the picture we drew in response. Scroll through the story.</p>
+
+    <!-- Postcard 1: Causes (sketch placeholder) -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 1 — What are we blaming?</p>
         <h2>What are the primary causes of air crashes?</h2>
-        <figure class="viz-figure">
-            <img class="viz-img" src="images/sketches/primary_causes.png"
-                 alt="A visualization sketch of the primary causes of air crashes">
-        </figure>
-        <p class="viz-desc">DESCRIPTION</p>
+        <p class="viz-desc story-caption">We started by asking: when something goes wrong, what does the report say? Technical failure, weather, human factor, or unknown. This sketch is our first draft of that answer.</p>
+        <div id="causes-chart" style="width:100%;min-height:520px;position:relative;"></div>
+        <p class="viz-desc">
+            Each bubble represents a root-cause category assigned to crashes in the dataset.
+            Bubble size reflects the number of crashes. Hover to see the exact count and overall share.
+        </p>
     </section>
 
-    <section class="viz-section globe-viz">
-        <h2>Where do planes crash?</h2>
-        <p class="viz-desc">Historical plane crash data on a 3D globe with coordinate-based heat map. Use the year slider or Play to animate over time; click a point for details.</p>
+    <!-- Postcard 2: Where & when (globe + timeline) -->
+    <section class="viz-section story-card globe-timeline-card">
+        <p class="postcard-label">Postcard 2 — Where and when?</p>
+        <h2>Where do planes crash, and how often through the years?</h2>
+        <p class="viz-desc story-caption">On the left, a globe that fills with crash points as you move through time. On the right, a line being drawn year by year, with a tiny plane tracing the rhythm of crashes.</p>
+
         <div class="globe-controls">
             <div class="globe-control-group">
                 <label for="year-slider">Year:</label>
@@ -53,7 +64,8 @@
             </div>
         </div>
         <div class="globe-stats">
-            <span id="crash-count">Loading...</span> crashes displayed
+            <span id="crash-count">Loading...</span> crashes displayed ·
+            <span id="crash-count-year">–</span> crashes this year
         </div>
         <div id="legend" class="legend globe-legend">
             <div class="legend-content">
@@ -61,77 +73,98 @@
                 <div class="legend-items" id="legend-items"></div>
             </div>
         </div>
-        <div id="globe-container">
-            <div class="loading">Loading globe and data...</div>
-            <button id="auto-rotate-btn">Stop Auto-Rotate</button>
+
+        <div class="globe-timeline-row">
+            <div class="globe-column globe-viz">
+                <div id="globe-container">
+                    <div class="loading">Loading globe and data...</div>
+                </div>
+            </div>
+
+            <div class="timeline-column">
+                <div class="timeline-panel">
+                    <div id="timeline-viz" class="viz-block"></div>
+                </div>
+            </div>
         </div>
-        <div id="crash-info-box" class="crash-info-box">
-            <div class="info-box-content">
-                <p class="info-placeholder">Click on a crash point to see details</p>
+
+        <div class="crash-summary-row">
+            <div class="crash-summary-column globe-viz">
+                <div id="crash-info-box" class="crash-info-box">
+                    <div class="info-box-content"><p class="info-placeholder">Click on a crash point to see details</p></div>
+                </div>
+            </div>
+            <div class="crash-summary-column">
+                <div id="timeline-info-box" class="timeline-info-box collapsed">
+                    <div class="timeline-info-header">
+                        <span class="timeline-info-title">Most fatal crash this year</span>
+                        <button type="button" id="timeline-info-toggle" class="timeline-info-toggle">Show</button>
+                    </div>
+                    <div class="timeline-info-content">
+                        <p class="timeline-info-placeholder">
+                            Use Play or move the year slider to see the most fatal crash for each year.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="viz-section">
-        <h2>What is the relationship between crashes per year?</h2>
-        <figure class="viz-figure">
-            <img class="viz-img" src="images/sketches/years_crashes.png"
-                 alt="A visualization sketch of crashes per year">
-        </figure>
-        <p class="viz-desc">DESCRIPTION</p>
+    <!-- Postcard 4: Why (causes bar chart) -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 4 — The official reason</p>
+        <h2>What does the data say caused the crash?</h2>
+        <p class="viz-desc story-caption">From the same dataset we counted how often each “Crash cause” appears. Technical failure and Unknown lead; we leave the interpretation to you.</p>
+        <div id="causes-viz" class="viz-block"></div>
     </section>
 
-    <section class="viz-section">
-        <h2>Which phase of aviation do crashes happen the most?</h2>
+    <!-- Postcard 5: Phase of flight -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 5 — Takeoff, cruise, or landing?</p>
+        <h2>Which phase of flight do crashes happen most?</h2>
+        <p class="viz-desc story-caption">We grouped crashes by flight phase. The size of each bubble is the number of crashes in that phase. Landing and takeoff stand out.</p>
         <div id="phases-chart" class="viz-block"></div>
-        <p class="viz-desc">DESCRIPTION
-            Interactivity: when hovered on, the plane will travel across the nodes on a line and display total crash data.
-        </p>
     </section>
 
-    <section class="viz-section">
-        <h2>Aircraft Type vs Number of Occurrences</h2>
+    <!-- Postcard 6: Aircraft type -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 6 — Which machines?</p>
+        <h2>Aircraft type vs number of occurrences</h2>
+        <p class="viz-desc story-caption">We drew each aircraft type as a circle; the more crashes, the bigger the bubble. Hover to see the count.</p>
         <div id="jar-viz" class="viz-block"></div>
-        <p class="viz-desc">DESCRIPTION
-          Interactivity: when hovered on, details of number of occurrences will appear.
-        </p>
-        
     </section>
 
-    <section class="viz-section">
-        <h2>Heatmap of Fatality During a Crash</h2>
-        <figure class="viz-figure">
-            <img class="viz-img" src="images/sketches/plane_heatmap.png"
-                 alt="A visualization sketch of the most fatal places during a plane crash">
-        </figure>
-        <p class="viz-desc">DESCRIPTION</p>
-        <p class="viz-note">
-        </p>
+    <!-- Postcard 7: Airplane survivor heatmap -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 7 — Where on the plane?</p>
+        <h2>Survivor distribution across aircraft zones</h2>
+        <p class="viz-desc story-caption">Based on a crash study, we mapped where survivors were found in different sections of the aircraft. The color shows relative fatality risk, i.e. darker zones had fewer survivors. Hover over the text to see the details.</p>
+        <div id="airplane-heatmap" class="viz-block"></div>
     </section>
 
     <section class="viz-section">
         <h2>Weather Impacting Crashes</h2>
+        <div id="weather-viz" class="viz-block" style="position: relative;"></div>
+        <p class="viz-desc">Number of crashes categorized by weather condition. The distance of the plane from the axis represents the total frequency. Hover over the plane to see the exact count!</p>
+    <!-- Postcard 8: Weather sketch -->
+    <section class="viz-section story-card">
+        <p class="postcard-label">Postcard 8 — When the sky turns</p>
+        <h2>Weather impacting crashes</h2>
+        <p class="viz-desc story-caption">We wondered how often weather is named. This sketch is our idea of that relationship—another angle on the same data.</p>
         <figure class="viz-figure">
-            <img class="viz-img" src="images/sketches/weather_crashes.png"
-                 alt="A visualization sketch of the relationship between weather and plane crash likelihood">
+            <img class="viz-img" src="images/sketches/weather_crashes.png" alt="Sketch: weather and plane crash likelihood">
         </figure>
-        <p class="viz-desc">DESCRIPTION</p>
     </section>
+
+    <p class="story-outro">End of our data postcards. The dataset is incomplete and biased by reporting; these pictures are what we see in it, not the whole truth. — Team Flight Risk</p>
 </main>
-
-
-<!-- Load JS libraries: jQuery, bootstrap, D3 -->
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
-
-<!-- d3 and topojson (for globe) -->
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://d3js.org/topojson.v3.min.js"></script>
-
-<!-- own js files -->
 <script type="module" src="js/main.js"></script>
 <script src="js/globe-visualization.js"></script>
-
 </body>
 </html>
