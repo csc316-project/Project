@@ -31,36 +31,35 @@ let svg_weather = d3.select("#weather-viz")
     .attr("width", 800)
     .attr("height", 350)
     .style("max-width", "100%")
-
     .style("display", "block")
     .style("margin", "-20px auto 0 auto");
 
 // Data that has coordinates (same CSV as globe) — for timeline and causes
-d3.csv("data/Plane_Crashes_with_Coordinates.csv").then(function(rows) {
+d3.csv("data/Plane_Crashes_with_Coordinates.csv").then(function (rows) {
     var timelineEl = d3.select("#timeline-viz");
     if (!timelineEl.empty()) timeline.renderTimeline(timelineEl, rows);
     var causesEl = d3.select("#causes-viz");
     if (!causesEl.empty()) causes.renderCauses(causesEl, rows);
-}).catch(function(e) { console.error("Timeline/causes load error:", e); });
+}).catch(function (e) { console.error("Timeline/causes load error:", e); });
 
-d3.csv("data/plane_crashes.csv").then(function(csv) {
+d3.csv("data/plane_crashes.csv").then(function (csv) {
     render_jar.render_jar(svg_jar, csv);
-}).catch(function(e) { console.error("Jar viz load error:", e); });
+}).catch(function (e) { console.error("Jar viz load error:", e); });
 
 d3.csv("data/plane_crashes.csv").then(csv => {
     const container = d3.select("#causes-chart");
     render(container, csv);
 });
 
-d3.csv("data/phase_crashes.csv").then(function(csv) {
-    csv.forEach(function(d) { d.crashes = +d.crashes; });
+d3.csv("data/phase_crashes.csv").then(function (csv) {
+    csv.forEach(function (d) { d.crashes = +d.crashes; });
     phases.render(svg_phases, csv);
-});
+}).catch(function (e) { console.error("Phases load error:", e); });
 
 d3.csv("data/weather_crashes.csv").then(csv => {
     weather_viz.render(svg_weather, csv);
-}).catch(function(e) { console.error("Phases load error:", e); });
+}).catch(function (e) { console.error("Weather viz load error:", e); });
 
-d3.csv("data/airplane_survivors.csv").then(function(csv) {
+d3.csv("data/airplane_survivors.csv").then(function (csv) {
     airplaneHeatmap.render(svg_airplane, csv);
-}).catch(function(e) { console.error("Airplane heatmap load error:", e); });
+}).catch(function (e) { console.error("Airplane heatmap load error:", e); });
