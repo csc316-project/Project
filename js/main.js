@@ -30,7 +30,7 @@ let svg_weather = d3.select("#weather-viz")
     .append("svg")
     .attr("width", 800)
     .attr("height", 350)
-    .style("max-width", "100%");
+    .style("max-width", "100%")
 
     .style("display", "block")
     .style("margin", "-20px auto 0 auto");
@@ -59,7 +59,6 @@ d3.csv("data/phase_crashes.csv").then(function(csv) {
 
 d3.csv("data/weather_crashes.csv").then(csv => {
     weather_viz.render(svg_weather, csv);
-});
 }).catch(function(e) { console.error("Phases load error:", e); });
 
 d3.csv("data/airplane_survivors.csv").then(function(csv) {

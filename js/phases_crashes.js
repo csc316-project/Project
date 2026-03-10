@@ -37,13 +37,19 @@ export function render(svg, data) {
 
     const radiusScale = d3.scaleSqrt()
         .domain([0, d3.max(data, d => d.crashes)])
-        .range([8, 50]);
+        .range([12, 65]);
 
     const colorScale = d3.scaleSequential(t => {
-        let color = d3.hsl(d3.interpolateBlues(t));
-        color.s *= 0.6;
-        color.l *= 0.8;
-        return color;
+        // 1. Get the original Magma color (clamped to the 0.2 - 0.9 range as before)
+        let color = d3.hsl(d3.interpolateMagma(0.2 + (t * 0.7)));
+
+        // 2. Reduce saturation (make it "less neon")
+        color.s *= 0.5;
+
+        // 3. Boost lightness (ensure it's not too dark for a white background)
+        color.l = Math.min(color.l + 0.2, 0.85);
+
+        return color.toString();
     })
         .domain([d3.max(data, d => d.crashes), 0]);
 
@@ -72,37 +78,6 @@ export function render(svg, data) {
 
     path.attr("stroke-dasharray", totalLength + " " + totalLength)
         .attr("stroke-dashoffset", totalLength);
-
-    // draw ground
-
-    const groundGradient = defs.append("linearGradient")
-        .attr("id", "ground-gradient")
-        .attr("x1", "0%").attr("y1", "0%")
-        .attr("x2", "0%").attr("y2", "100%");
-
-    groundGradient.append("stop")
-        .attr("offset", "0%")
-        .attr("stop-color", "#1a1f2c");
-
-    groundGradient.append("stop")
-        .attr("offset", "100%")
-        .attr("stop-color", "#000000");
-
-    svg.append("rect")
-        .attr("x", 0)
-        .attr("y", baseline)
-        .attr("width", width)
-        .attr("height", height - baseline)
-        .attr("fill", "url(#ground-gradient)")
-        .attr("opacity", 0.5);
-
-    svg.append("line")
-        .attr("x1", 0)
-        .attr("y1", baseline)
-        .attr("x2", width)
-        .attr("y2", baseline)
-        .attr("stroke", "rgba(255,255,255,0.1)")
-        .attr("stroke-width", 1);
 
     // circle data points
     const circles = svg.selectAll(".phase-circle")
@@ -140,9 +115,6 @@ export function render(svg, data) {
                 .transition().duration(200)
                 .attr("transform", `translate(${p.x}, ${p.y}) scale(1)`);
 
-            d3.select(event.currentTarget).select("circle")
-                .attr("stroke", "#333").attr("stroke-width", 2);
-
             tooltip.style("visibility", "hidden");
         });
 
@@ -150,15 +122,15 @@ export function render(svg, data) {
         .attr("r", d => radiusScale(d.crashes))
         .attr("fill", d => colorScale(d.crashes))
         .attr("opacity", 1)
-        .attr("stroke", "#333")
+        // .attr("stroke", "#383535")
         .attr("stroke-width", 2);
 
     circles.append("text")
         .text(d => d.flight_phase)
         .attr("text-anchor", "middle")
         .attr("dy", d => radiusScale(d.crashes) + 20)
-        .style("fill", "rgba(255,255,255,0.8)")
-        .style("font-size", "12px")
+        .style("fill", "rgb(56,53,53)")
+        .style("font-size", "13px")
         .style("font-family", "sans-serif");
 
     const airplane = svg.append("image")
