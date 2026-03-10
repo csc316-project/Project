@@ -7,6 +7,7 @@ export function render(svg, data) {
     const peakHeight = height * 0.5; // highest point for the arch
 
     svg.selectAll("*").remove();
+    const defs = svg.append("defs");
 
     d3.select(".d3-tooltip").remove();
     const tooltip = d3.select("body").append("div")
@@ -58,14 +59,50 @@ export function render(svg, data) {
         .y((d, i) => getPoint(i).y)
         .curve(d3.curveCatmullRom.alpha(0.5));
 
-    svg.append("path")
+    const path = svg.append("path")
         .datum(data)
         .attr("d", lineGenerator)
         .attr("fill", "none")
-        .attr("stroke", "white")
+        .attr("stroke", "#333")
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "8,4")
-        .attr("opacity", 0.3);
+        .attr("opacity", 0.3)
+
+    const totalLength = path.node().getTotalLength()
+
+    path.attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dashoffset", totalLength);
+
+    // draw ground
+
+    const groundGradient = defs.append("linearGradient")
+        .attr("id", "ground-gradient")
+        .attr("x1", "0%").attr("y1", "0%")
+        .attr("x2", "0%").attr("y2", "100%");
+
+    groundGradient.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", "#1a1f2c");
+
+    groundGradient.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", "#000000");
+
+    svg.append("rect")
+        .attr("x", 0)
+        .attr("y", baseline)
+        .attr("width", width)
+        .attr("height", height - baseline)
+        .attr("fill", "url(#ground-gradient)")
+        .attr("opacity", 0.5);
+
+    svg.append("line")
+        .attr("x1", 0)
+        .attr("y1", baseline)
+        .attr("x2", width)
+        .attr("y2", baseline)
+        .attr("stroke", "rgba(255,255,255,0.1)")
+        .attr("stroke-width", 1);
 
     // circle data points
     const circles = svg.selectAll(".phase-circle")
@@ -75,20 +112,37 @@ export function render(svg, data) {
         .attr("class", "phase-circle")
         .attr("transform", (d, i) => `translate(${getPoint(i).x}, ${getPoint(i).y})`)
         .on("mouseover", (event, d) => {
-            d3.select(event.currentTarget).select("circle")
-                .transition().duration(200).attr("stroke", "#fff").attr("stroke-width", 4);
+            const i = data.indexOf(d);
+            const p = getPoint(i);
 
-            tooltip.style("visibility", "visible")
-                .html(`<strong>Phase:</strong> ${d.flight_phase}<br/><strong>Crashes:</strong> 
-                    ${d.crashes.toLocaleString()}`);
+            d3.select(event.currentTarget)
+                .transition().duration(200)
+                .attr("transform", `translate(${p.x}, ${p.y}) scale(1.2)`);
+
+            d3.select(event.currentTarget).select("circle")
+                .attr("stroke", "#fff").attr("stroke-width", 4);
+
+            let content = `<strong>Phase:</strong> ${d.flight_phase}<br/><strong>Crashes:</strong> ${d.crashes.toLocaleString()}`;
+            if (d.flight_phase.includes("Takeoff")) content = `<strong>Did you know?</strong><br/>Takeoff is one of the 'Critical 11' minutes.`;
+            if (d.flight_phase.includes("Landing")) content = `<strong>Did you know?</strong><br/>Most incidents occur during the final 8 minutes of landing.`;
+
+            tooltip.style("visibility", "visible").html(content);
         })
         .on("mousemove", (event) => {
             tooltip.style("top", (event.pageY - 40) + "px")
             .style("left", (event.pageX + 15) + "px");
         })
-        .on("mouseout", (event) => {
+        .on("mouseout", (event, d) => {
+            const i = data.indexOf(d);
+            const p = getPoint(i);
+
+            d3.select(event.currentTarget)
+                .transition().duration(200)
+                .attr("transform", `translate(${p.x}, ${p.y}) scale(1)`);
+
             d3.select(event.currentTarget).select("circle")
-                .transition().duration(200).attr("stroke", "rgba(255,255,255,0.3)").attr("stroke-width", 2);
+                .attr("stroke", "#333").attr("stroke-width", 2);
+
             tooltip.style("visibility", "hidden");
         });
 
@@ -113,7 +167,6 @@ export function render(svg, data) {
         .attr("height", 40)
         .attr("x", -20)
         .attr("y", -20)
-        .style("filter", "brightness(0) invert(1)")
         .attr("transform", `translate(${xScale(0)}, ${baseline})`);
 
     const crashLabels = circles.append("text")
@@ -131,12 +184,18 @@ export function render(svg, data) {
     const startFlight = () => {
         const lastIndex = data.length - 1;
 
+        path.attr("stroke-dashoffset", totalLength)
+            .transition()
+            .duration(15000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dashoffset", 0);
+
         crashLabels.style("opacity", 0)
             .style("text-shadow", "0px 0px 4px rgba(0,0,0,0.8)")
             .attr("transform", "scale(0)");
 
         airplane.transition()
-            .duration(10000)
+            .duration(15000)
             .ease(d3.easeLinear)
             .attrTween("transform", function() {
                 return function(t) {
