@@ -29,6 +29,7 @@ body {
 .page-scale {
     transform: scale(0.8);
     transform-origin: top center;
+    height: 80%;
 }
 
 .main-container {
