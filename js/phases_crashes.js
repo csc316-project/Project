@@ -7,7 +7,6 @@ export function render(svg, data) {
     const peakHeight = height * 0.5; // highest point for the arch
 
     svg.selectAll("*").remove();
-    const defs = svg.append("defs");
 
     d3.select(".d3-tooltip").remove();
     const tooltip = d3.select("body").append("div")
@@ -40,13 +39,9 @@ export function render(svg, data) {
         .range([12, 65]);
 
     const colorScale = d3.scaleSequential(t => {
-        // 1. Get the original Magma color (clamped to the 0.2 - 0.9 range as before)
         let color = d3.hsl(d3.interpolateMagma(0.2 + (t * 0.7)));
-
-        // 2. Reduce saturation (make it "less neon")
         color.s *= 0.5;
 
-        // 3. Boost lightness (ensure it's not too dark for a white background)
         color.l = Math.min(color.l + 0.2, 0.85);
 
         return color.toString();
@@ -97,9 +92,12 @@ export function render(svg, data) {
             d3.select(event.currentTarget).select("circle")
                 .attr("stroke", "#fff").attr("stroke-width", 4);
 
-            let content = `<strong>Phase:</strong> ${d.flight_phase}<br/><strong>Crashes:</strong> ${d.crashes.toLocaleString()}`;
-            if (d.flight_phase.includes("Takeoff")) content = `<strong>Did you know?</strong><br/>Takeoff is one of the 'Critical 11' minutes.`;
-            if (d.flight_phase.includes("Landing")) content = `<strong>Did you know?</strong><br/>Most incidents occur during the final 8 minutes of landing.`;
+            let content = `<strong>Phase:</strong> ${d.flight_phase}<br/><strong>Crashes:</strong>
+                ${d.crashes.toLocaleString()}`;
+            if (d.flight_phase.includes("Takeoff")) content = `<strong>Did you know?</strong>
+                                                                    <br/>Takeoff is one of the 'Critical 11' minutes.`;
+            if (d.flight_phase.includes("Landing")) content = `<strong>Did you know?</strong>
+                                                    <br/>Most incidents occur during the final 8 minutes of landing.`;
 
             tooltip.style("visibility", "visible").html(content);
         })
@@ -133,13 +131,15 @@ export function render(svg, data) {
         .style("font-size", "13px")
         .style("font-family", "sans-serif");
 
+    const startPoint = getPoint(0);
+
     const airplane = svg.append("image")
         .attr("xlink:href", "images/airplane.png")
         .attr("width", 40)
         .attr("height", 40)
         .attr("x", -20)
         .attr("y", -20)
-        .attr("transform", `translate(${xScale(0)}, ${baseline})`);
+        .attr("transform", `translate(${startPoint.x}, ${startPoint.y - 40}) rotate(-45)`);
 
     const crashLabels = circles.append("text")
         .attr("class", "crash-count")
@@ -169,10 +169,20 @@ export function render(svg, data) {
         airplane.transition()
             .duration(15000)
             .ease(d3.easeLinear)
-            .attrTween("transform", function() {
-                return function(t) {
+            .attrTween("transform", function () {
+
+                const pathNode = path.node();
+
+                return function (t) {
+
+                    const length = t * totalLength;
+
+                    const p = pathNode.getPointAtLength(length);
+                    const p2 = pathNode.getPointAtLength(Math.min(length + 1, totalLength));
+
+                    const angle = Math.atan2(p2.y - p.y, p2.x - p.x) * 180 / Math.PI;
+
                     const i = t * lastIndex;
-                    const p = getPoint(i);
 
                     data.forEach((d, index) => {
                         if (Math.abs(i - index) < 0.1) {
@@ -184,16 +194,9 @@ export function render(svg, data) {
                         }
                     });
 
-                    let angle = 0;
-                    if (i > 0.2 && i < cruiseIndex - 0.2) {
-                        angle = -15;
-                    } else if (i > cruiseIndex + 0.2 && i < lastIndex - 0.2) {
-                        angle = 15;
-                    } else {
-                        angle = 0;
-                    }
+                    const baseOffset = 45;
 
-                    return `translate(${p.x}, ${p.y - 40}) rotate(${angle})`;
+                    return `translate(${p.x}, ${p.y - 40}) rotate(${angle + baseOffset}, 0, 0)`;
                 };
             });
     };
