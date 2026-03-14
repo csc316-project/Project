@@ -41,9 +41,10 @@ export function render(container, data) {
     })).sort((a, b) => b.count - a.count);
 
     const n = sorted.length;
+
     const rScale = d3.scaleSqrt()
         .domain([0, d3.max(sorted, d => d.count)])
-        .range([32, Math.min(width * 0.11, 82)]);
+        .range([24, Math.min(width * 0.085, 64)]);
     sorted.forEach(d => { d.r = rScale(d.count); });
 
     const arcSlots  = new Array(n);
@@ -57,11 +58,11 @@ export function render(container, data) {
     const step      = arcSpread / (n - 1);
     let minArcR = 140;
     for (let i = 0; i < n - 1; i++) {
-        const gap    = nodes[i].r + nodes[i + 1].r + 30;
+        const gap    = nodes[i].r + nodes[i + 1].r + 40;
         const needed = gap / (2 * Math.sin(step / 2));
         minArcR = Math.max(minArcR, needed);
     }
-    const arcR    = minArcR * 1.02;
+    const arcR    = minArcR * 1.08;
     const ySquish = 1.1;
     const planeX  = width / 2;
     const planeY  = 500;
@@ -72,19 +73,23 @@ export function render(container, data) {
         d.ty = planeY - Math.sin(angle) * arcR * ySquish;
     });
 
-    const topY = d3.min(nodes, d => d.ty - d.r) - 24;
-    const botY = planeY + 50;
-    const svgH = botY - topY;
+    const pad   = 10;
+    const topY  = d3.min(nodes, d => d.ty - d.r) - pad;
+    const botY  = planeY + 60;
+    const leftX = d3.min(nodes, d => d.tx - d.r - 7) - pad;
+    const rightX= d3.max(nodes, d => d.tx + d.r + 7) + pad;
+    const vbW   = rightX - leftX;
+    const svgH  = botY - topY;
 
     const svg = container.append("svg")
         .attr("width", "100%")
-        .attr("viewBox", `0 ${topY} ${width} ${svgH}`)
+        .attr("viewBox", `${leftX} ${topY} ${vbW} ${svgH}`)
         .attr("preserveAspectRatio", "xMidYMid meet")
         .style("overflow", "visible");
 
     svg.append("rect")
-        .attr("x", 0).attr("y", topY)
-        .attr("width", width).attr("height", svgH)
+        .attr("x", leftX).attr("y", topY)
+        .attr("width", vbW).attr("height", svgH)
         .attr("fill", "#fdfcfa")
         .attr("rx", 4);
 
@@ -200,8 +205,8 @@ export function render(container, data) {
                 .attr("dy", `${yBase + lineH}px`)
                 .attr("text-anchor", "middle")
                 .attr("font-size", fs)
-                .attr("fill", "#5c564d")
-                .attr("font-family", "DM Sans, ui-sans-serif, system-ui, sans-serif")
+                .attr("fill", "#736c65")
+                .attr("font-family", "Georgia, serif")
                 .text(d.cause);
         } else {
             const mid = Math.ceil(words.length / 2);
@@ -210,8 +215,8 @@ export function render(container, data) {
                     .attr("dy", `${yBase + lineH * (0.3 + li)}px`)
                     .attr("text-anchor", "middle")
                     .attr("font-size", fs)
-                    .attr("fill", "#5c564d")
-                    .attr("font-family", "DM Sans, ui-sans-serif, system-ui, sans-serif")
+                    .attr("fill", "#605a55")
+                    .attr("font-family", "Georgia, serif")
                     .text(line);
             });
         }
@@ -219,7 +224,7 @@ export function render(container, data) {
 
     const planeG = svg.append("g")
         .attr("transform", `translate(${planeX}, ${planeY})`);
-    // Shadow ellipse
+
     planeG.append("ellipse")
         .attr("rx", 36).attr("ry", 8).attr("cy", 22)
         .attr("fill", "rgba(28,25,22,0.07)");
@@ -242,9 +247,9 @@ export function render(container, data) {
         .style("border-top", "3px solid #c45c26")
         .style("border-radius", "4px")
         .style("padding", "14px 18px")
-        .style("font-family", "font-family", "DM Sans, ui-sans-serif, system-ui, sans-serif")
+        .style("font-family", "DM Sans, ui-sans-serif, system-ui, sans-serif")
         .style("font-size", "12px")
-        .style("color", "#c45c26")
+        .style("color", "#1c1916")
         .style("box-shadow", "0 4px 24px rgba(28,25,22,0.10)")
         .style("max-width", "220px")
         .style("z-index", "999");
@@ -301,7 +306,6 @@ export function render(container, data) {
             tip.style("display", "none");
         });
 
-    // entrance animation
     cell.attr("opacity", 0)
         .transition()
         .delay((_, i) => 200 + i * 130)
