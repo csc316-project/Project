@@ -57,11 +57,11 @@ export function render(container, data) {
     const step      = arcSpread / (n - 1);
     let minArcR = 140;
     for (let i = 0; i < n - 1; i++) {
-        const gap    = nodes[i].r + nodes[i + 1].r + 22;
+        const gap    = nodes[i].r + nodes[i + 1].r + 30;
         const needed = gap / (2 * Math.sin(step / 2));
         minArcR = Math.max(minArcR, needed);
     }
-    const arcR    = minArcR * 0.94;
+    const arcR    = minArcR * 1.02;
     const ySquish = 1.1;
     const planeX  = width / 2;
     const planeY  = 500;
