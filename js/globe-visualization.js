@@ -18,7 +18,7 @@ var W = 480, H = 420;
     proj.clipAngle(90);
     var path = d3.geoPath().projection(proj);
 
-    var yearNow = 2023, playing = false, speed = 1;
+    var yearNow = 2023, playing = false, speed = 5;
     var rotX = 0, rotY = 0;
     var drag = false;
     var lastX = 0, lastY = 0, startX = 0, startY = 0, tDown = 0;
