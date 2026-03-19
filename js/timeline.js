@@ -141,12 +141,36 @@ export function renderTimeline(container, rows) {
             dragMoved = false;
         });
 
-    svg.on("mousedown.plane", function() {
-        planeGroup.select("path")
-            .transition().duration(120).ease(d3.easeCubicOut)
-            .attr("transform", "scale(1.25)");
+    var isPressed = false;
+
+    svg.on("mouseover.plane", function() {
+        if (!isPressed) {
+            planeGroup.select("path")
+                .transition().duration(120).ease(d3.easeCubicOut)
+                .attr("transform", "scale(1.1)");
+        }
     })
-        .on("mouseup.plane mouseleave.plane", function() {
+        .on("mousedown.plane", function(event) {
+            isPressed = true;
+
+            planeGroup.select("path")
+                .transition().duration(120).ease(d3.easeCubicOut)
+                .attr("transform", "scale(1.40)");
+
+            var coords = d3.pointer(event, g.node());
+            var clickedYear = Math.round(xScale.invert(coords[0]));
+            clickedYear = Math.max(minYear, Math.min(maxYear, clickedYear));
+            updateYearHighlight(clickedYear);
+            window.dispatchEvent(new CustomEvent("viz-year-change", { detail: { year: clickedYear } }));
+        })
+        .on("mouseup.plane", function() {
+            isPressed = false;
+            planeGroup.select("path")
+                .transition().duration(200).ease(d3.easeCubicOut)
+                .attr("transform", "scale(1.15)");
+        })
+        .on("mouseleave.plane", function() {
+            isPressed = false;
             planeGroup.select("path")
                 .transition().duration(200).ease(d3.easeCubicOut)
                 .attr("transform", "scale(1)");
