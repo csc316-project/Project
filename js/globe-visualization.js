@@ -27,6 +27,14 @@ var W = 480, H = 420;
     var playTimer = null, raf = null;
     var yearRange = { lo: 1900, hi: 2023 };
 
+    var circ = svg.append("circle")
+        .attr("cx", W/2)
+        .attr("cy", H/2)
+        .attr("r", proj.scale())
+        .attr("fill", "none")
+        .attr("stroke", "#c4b9a5")
+        .attr("stroke-width", 2);
+
     function parseCSV(rows) {
         var arr = [];
         for (var i = 0; i < rows.length; i++) {
@@ -73,13 +81,6 @@ var W = 480, H = 420;
         gratPath
             .attr("stroke", "rgba(92,86,77,0.25)")
             .attr("stroke-width", 0.5);
-        var sc = proj.scale();
-        var circ = svg.append("circle");
-        circ.attr("cx", W/2).attr("cy", H/2).attr("r", sc);
-        circ
-            .attr("fill", "none")
-            .attr("stroke", "#c4b9a5")
-            .attr("stroke-width", 2);
     }
 
     function getHeatCells() {
@@ -208,6 +209,7 @@ var W = 480, H = 420;
         raf = requestAnimationFrame(function() {
             proj.rotate([rotY, -rotX]);
             svg.selectAll("path").attr("d", path);
+            circ.attr("r", proj.scale());
             applyYear();
             raf = null;
         });
