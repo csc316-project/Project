@@ -234,48 +234,75 @@ var W = 480, H = 420;
         disp.text(yearNow);
 
         var playBtn = d3.select("#play-pause");
+        var lastTime = null;
+        var yearAccum = 0; // accumulates fractional years
+
         playBtn.on("click", function() {
             playing = !playing;
             playBtn.text(playing ? "Pause" : "Play");
+
             if (playing) {
-                var step = 1000 / speed;
-                if (playTimer) clearInterval(playTimer);
-                playTimer = setInterval(function() {
-                    if (yearNow >= yearRange.hi) yearNow = yearRange.lo;
-                    else yearNow++;
-                    slider.property("value", yearNow);
-                    disp.text(yearNow);
-                    frame();
-                }, step);
+                if (playTimer) cancelAnimationFrame(playTimer);
+                lastTime = null;
+                yearAccum = 0;
+
+                function tick(now) {
+                    if (!playing) return;
+
+                    if (lastTime !== null) {
+                        var elapsed = now - lastTime;           // ms since last frame
+                        var msPerYear = 1000 / speed;           // ms per year at current speed
+                        yearAccum += elapsed / msPerYear;
+
+                        // Smooth rotation: ~10°/sec independent of speed
+                        var rotDelta = (elapsed / 1000) * 10;
+                        rotY += rotDelta;
+
+                        // Advance year when accumulator crosses a whole number
+                        if (yearAccum >= 1) {
+                            var steps = Math.floor(yearAccum);
+                            yearAccum -= steps;
+                            yearNow += steps;
+                            if (yearNow > yearRange.hi) yearNow = yearRange.lo;
+                            slider.property("value", yearNow);
+                            disp.text(yearNow);
+                        }
+
+                        // Let frame() do one raf-based render
+                        proj.rotate([rotY, -rotX]);
+                        svg.selectAll("path").attr("d", path);
+                        circ.attr("r", proj.scale());
+                        applyYear();
+                    }
+
+                    lastTime = now;
+                    playTimer = requestAnimationFrame(tick);
+                }
+
+                playTimer = requestAnimationFrame(tick);
+
             } else {
-                clearInterval(playTimer);
+                if (playTimer) cancelAnimationFrame(playTimer);
+                playTimer = null;
             }
         });
 
+
         d3.select("#speed-slider").on("input", function() {
-            speed = parseFloat(this.value, 10);
+            speed = parseFloat(this.value);
             d3.select("#speed-display").text(speed.toFixed(1));
-            // If currently playing, update the timer without resetting the year
-            if (playing) {
-                if (playTimer) clearInterval(playTimer);
-                var step = 1000 / speed;
-                playTimer = setInterval(function() {
-                    if (yearNow >= yearRange.hi) yearNow = yearRange.lo;
-                    else yearNow++;
-                    slider.property("value", yearNow);
-                    disp.text(yearNow);
-                    frame();
-                }, step);
-            }
+            // No timer restart needed — tick() reads speed every frame
         });
 
         d3.select("#reset").on("click", function() {
             playing = false;
-            clearInterval(playTimer);
+            // clearInterval(playTimer);
             d3.select("#play-pause").text("Play");
             yearNow = yearRange.lo;
             slider.property("value", yearRange.lo);
             disp.text(yearRange.lo);
+            cancelAnimationFrame(playTimer);
+            playTimer = null;
             frame();
         });
 
