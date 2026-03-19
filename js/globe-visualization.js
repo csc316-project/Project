@@ -192,7 +192,7 @@ var W = 480, H = 420;
         var mx = 0;
         for (var i = 0; i < cells.length; i++) if (cells[i].cnt > mx) mx = cells[i].cnt;
         // leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,blue,cyan,yellow,orange,red);width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
-        leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,rgb(0,0,180),rgb(170,0,160),rgb(240,0,0));width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
+        leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,rgb(0,0,180),rgb(170,0,160),rgb(240,0,0));width:100%;margin-bottom:5px;border-radius: 8px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
     }
 
     function repaint() {
@@ -270,9 +270,12 @@ var W = 480, H = 420;
                         var msPerYear = 1000 / speed;           // ms per year at current speed
                         yearAccum += elapsed / msPerYear;
 
-                        // Smooth rotation: ~10°/sec independent of speed
-                        var rotDelta = (elapsed / 1000) * 10;
-                        rotY += rotDelta;
+                        if (document.getElementById("auto-rotate").checked) {
+                            // Smooth rotation: ~10°/sec independent of speed
+                            var rotDelta = (elapsed / 1000) * 10;
+                            rotY += rotDelta;
+                        }
+
 
                         // Advance year when accumulator crosses a whole number
                         if (yearAccum >= 1) {
