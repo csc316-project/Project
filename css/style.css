@@ -863,3 +863,38 @@ body {
 #globe-speed-slider {
     min-width: 20em;
 }
+
+/* ========== Plane Animation Reset ========== */
+#reset-plane {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+
+    /* Aesthetics */
+    padding: 10px 20px;
+    background: #ffffff;
+    border: 1.5px solid #333;
+    color: #333;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 25px; /* Rounded pill shape looks great on postcards */
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+    /* Animation state managed by JS */
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s ease;
+}
+
+#reset-plane:hover {
+    background: #333;
+    color: #fff;
+    transform: translateY(-2px); /* Subtle lift on hover */
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+#reset-plane:active {
+    transform: translateY(0);
+}

@@ -2,9 +2,9 @@
 export function render(svg, data) {
     const width = +svg.attr("width");
     const height = +svg.attr("height");
-    const margin = {top: 100, right: 80, bottom: 100, left: 80};
+    const margin = {top: 40, right: 80, bottom: 180, left: 80};
     const baseline = height - margin.bottom; // y coordinate for ground
-    const peakHeight = height * 0.5; // highest point for the arch
+    const peakHeight = height * 0.45; // highest point for the arch
 
     svg.selectAll("*").remove();
 
@@ -17,7 +17,7 @@ export function render(svg, data) {
         .style("padding", "10px 15px")
         .style("border", "1px solid #555")
         .style("border-radius", "8px")
-        .style("font-family", "sans-serif")
+        .style("font-family", "inherit")
         .style("font-size", "14px")
         .style("box-shadow", "0 4px 15px rgba(0,0,0,0.5)")
         .style("pointer-events", "none")
@@ -34,9 +34,10 @@ export function render(svg, data) {
        .range([0, 1, 0])
        // .interpolate(d3.interpolateNumber);
 
-    const radiusScale = d3.scaleSqrt()
+    const radiusScale = d3.scalePow()
+        .exponent(1.2)
         .domain([0, d3.max(data, d => d.crashes)])
-        .range([12, 65]);
+        .range([10, 80]);
 
     const colorScale = d3.scaleSequential(t => {
         let color = d3.hsl(d3.interpolateMagma(0.2 + (t * 0.7)));
@@ -113,6 +114,10 @@ export function render(svg, data) {
                 .transition().duration(200)
                 .attr("transform", `translate(${p.x}, ${p.y}) scale(1)`);
 
+            d3.select(event.currentTarget).select("circle")
+                .attr("stroke", "none") // Or "transparent", or your original stroke color
+                .attr("stroke-width", 0);
+
             tooltip.style("visibility", "hidden");
         });
 
@@ -120,7 +125,6 @@ export function render(svg, data) {
         .attr("r", d => radiusScale(d.crashes))
         .attr("fill", d => colorScale(d.crashes))
         .attr("opacity", 1)
-        // .attr("stroke", "#383535")
         .attr("stroke-width", 2);
 
     circles.append("text")
@@ -129,7 +133,7 @@ export function render(svg, data) {
         .attr("dy", d => radiusScale(d.crashes) + 20)
         .style("fill", "rgb(56,53,53)")
         .style("font-size", "13px")
-        .style("font-family", "sans-serif");
+        .style("font-family", "inherit");
 
     const startPoint = getPoint(0);
 
@@ -148,23 +152,33 @@ export function render(svg, data) {
         .attr("dy", 5) // Center it inside the circle
         .style("fill", "white")
         .style("font-weight", "bold")
-        .style("font-size", "14px")
-        .style("font-family", "sans-serif")
+        .style("font-size", d => {
+            const r = radiusScale(d.crashes);
+            return r < 25 ? "10px" : "14px";
+        })
+        .style("font-family", "inherit")
         .style("opacity", 0) // Hide initially
         .style("pointer-events", "none");
 
     const startFlight = () => {
         const lastIndex = data.length - 1;
+        const resetButton = d3.select("#reset-plane");
 
-        path.attr("stroke-dashoffset", totalLength)
-            .transition()
-            .duration(15000)
-            .ease(d3.easeLinear)
-            .attr("stroke-dashoffset", 0);
+        path.interrupt();
+        airplane.interrupt();
+        crashLabels.interrupt();
+
+        resetButton.style("opacity", 0).style("pointer-events", "none");
+        path.attr("stroke-dashoffset", totalLength);
 
         crashLabels.style("opacity", 0)
             .style("text-shadow", "0px 0px 4px rgba(0,0,0,0.8)")
             .attr("transform", "scale(0)");
+
+        path.transition()
+            .duration(15000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dashoffset", 0);
 
         airplane.transition()
             .duration(15000)
@@ -198,8 +212,21 @@ export function render(svg, data) {
 
                     return `translate(${p.x}, ${p.y - 40}) rotate(${angle + baseOffset}, 0, 0)`;
                 };
+            })
+            .on("end", () => {
+                resetButton
+                    .style("pointer-events", "auto")
+                    .transition()
+                    .duration(800)
+                    .style("opacity", 1);
             });
     };
+
+    // reset button click
+    d3.select("#reset-plane").on("click", (event) => {
+        event.preventDefault();
+        startFlight();
+    });
 
     // trigger animation
     const observer = new IntersectionObserver((entries) => {
