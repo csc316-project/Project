@@ -843,3 +843,23 @@ body {
 #timeline-viz {
     user-select: none;
 }
+
+#year-display {
+    width: 2.5em;
+    display: inline-block;
+    text-align: right;
+}
+
+#play-pause {
+    min-width: 4em;
+    text-align: center;
+}
+
+#reset {
+    min-width: 4em;
+    text-align: center;
+}
+
+#globe-speed-slider {
+    min-width: 20em;
+}

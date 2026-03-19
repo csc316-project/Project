@@ -19,7 +19,7 @@ var W = 480, H = 420;
     var path = d3.geoPath().projection(proj);
 
     var yearNow = 2023, playing = false, speed = 5;
-    var rotX = 0, rotY = 0;
+    var rotX = 15, rotY = 0;
     var drag = false;
     var lastX = 0, lastY = 0, startX = 0, startY = 0, tDown = 0;
     var crashes = [], byYear = [], hitList = [], selected = [];
@@ -99,16 +99,31 @@ var W = 480, H = 420;
         return out;
     }
 
+    // function rgbFromT(t) {
+    //     var r, g, b;
+    //     if (t < 0.25) {
+    //         r = 0; g = Math.floor(t*4*255); b = 128 + Math.floor(t*4*127);
+    //     } else if (t < 0.5) {
+    //         r = Math.floor((t-0.25)*4*255); g = 255; b = Math.floor((1-(t-0.25)*4)*255);
+    //     } else if (t < 0.75) {
+    //         r = 255; g = Math.floor((1-(t-0.5)*4*0.5)*255); b = 0;
+    //     } else {
+    //         r = 255; g = Math.floor((0.5-(t-0.75)*4*0.5)*255); b = 0;
+    //     }
+    //     return { r: r, g: g, b: b };
+    // }
+
     function rgbFromT(t) {
         var r, g, b;
         if (t < 0.25) {
-            r = 0; g = Math.floor(t*4*255); b = 128 + Math.floor(t*4*127);
-        } else if (t < 0.5) {
-            r = Math.floor((t-0.25)*4*255); g = 255; b = Math.floor((1-(t-0.25)*4)*255);
+            var s = t * 4;
+            r = Math.floor(s * 120); g = 0; b = Math.floor(180 + s * 40);
         } else if (t < 0.75) {
-            r = 255; g = Math.floor((1-(t-0.5)*4*0.5)*255); b = 0;
+            var s = (t - 0.25) * 2;
+            r = Math.floor(120 + s * 100); g = 0; b = Math.floor(220 - s * 120);
         } else {
-            r = 255; g = Math.floor((0.5-(t-0.75)*4*0.5)*255); b = 0;
+            var s = (t - 0.75) * 4;
+            r = Math.floor(220 + s * 20); g = 0; b = Math.floor(100 - s * 100);
         }
         return { r: r, g: g, b: b };
     }
@@ -176,16 +191,17 @@ var W = 480, H = 420;
         if (!cells.length) { leg.html('<div class="legend-item">No crashes</div>'); return; }
         var mx = 0;
         for (var i = 0; i < cells.length; i++) if (cells[i].cnt > mx) mx = cells[i].cnt;
-        leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,blue,cyan,yellow,orange,red);width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
+        // leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,blue,cyan,yellow,orange,red);width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
+        leg.html('<div style="display:flex;height:10px;background:linear-gradient(90deg,rgb(0,0,180),rgb(170,0,160),rgb(240,0,0));width:100%;margin-bottom:5px;"></div><div style="text-align:center;font-size:12px;opacity:0.8;">Max density: ' + mx + '</div>');
     }
 
     function repaint() {
         ctx.clearRect(0, 0, W, H);
-        var heat = [];
-        if (byYear.length > 500) {
-            heat = getHeatCells();
-            drawHeat(heat);
-        }
+        var heat = getHeatCells();
+        drawHeat(heat);
+
+        // if (byYear.length > 500) {
+        // }
         drawCrashDots();
         refreshLegend(heat);
     }
@@ -444,6 +460,7 @@ var W = 480, H = 420;
         parseCSV(res[1]);
         drawMap(res[0]);
         applyYear();
+        frame();
         wireControls();
         wireMouse();
 
