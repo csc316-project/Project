@@ -838,3 +838,8 @@ body {
     align-items: center;
     padding-top: 0;
 }
+
+/* ========== Timeline Click and Drag ========== */
+#timeline-viz {
+    user-select: none;
+}

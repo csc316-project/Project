@@ -456,6 +456,18 @@ var W = 480, H = 420;
                 frame();
                 showSel();
             });
+
+            window.addEventListener("viz-year-change", function(ev) {
+                var y = ev && ev.detail && ev.detail.year;
+                if (typeof y !== "number") return;
+
+                yearNow = y;
+                var slider = d3.select("#year-slider");
+                var disp = d3.select("#year-display");
+                if (!slider.empty()) slider.property("value", yearNow);
+                if (!disp.empty()) disp.text(yearNow);
+                frame();
+            });
         }
     }).catch(function(e) { console.error("Load error:", e); });
 })();

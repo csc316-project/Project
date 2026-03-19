@@ -105,6 +105,53 @@ export function renderTimeline(container, rows) {
         .attr("stroke", "#fdfcfa")
         .attr("stroke-width", 1.2);
 
+    var isDragging = false;
+    var dragMoved = false;
+
+    svg.on("mousedown", function(event) {
+        isDragging = true;
+        dragMoved = false;
+    })
+        .on("mousemove", function(event) {
+            if (!isDragging) return;
+            dragMoved = true;
+
+            var coords = d3.pointer(event, g.node());
+            var clickedYear = Math.round(xScale.invert(coords[0]));
+            clickedYear = Math.max(minYear, Math.min(maxYear, clickedYear));
+
+            updateYearHighlight(clickedYear);
+            window.dispatchEvent(new CustomEvent("viz-year-change", { detail: { year: clickedYear } }));
+        })
+        .on("mouseup", function(event) {
+            if (!dragMoved) {
+                // Treat as a plain click
+                var coords = d3.pointer(event, g.node());
+                var clickedYear = Math.round(xScale.invert(coords[0]));
+                clickedYear = Math.max(minYear, Math.min(maxYear, clickedYear));
+
+                updateYearHighlight(clickedYear);
+                window.dispatchEvent(new CustomEvent("viz-year-change", { detail: { year: clickedYear } }));
+            }
+            isDragging = false;
+            dragMoved = false;
+        })
+        .on("mouseleave", function() {
+            isDragging = false;
+            dragMoved = false;
+        });
+
+    svg.on("mousedown.plane", function() {
+        planeGroup.select("path")
+            .transition().duration(120).ease(d3.easeCubicOut)
+            .attr("transform", "scale(1.25)");
+    })
+        .on("mouseup.plane mouseleave.plane", function() {
+            planeGroup.select("path")
+                .transition().duration(200).ease(d3.easeCubicOut)
+                .attr("transform", "scale(1)");
+        });
+
     var infoBox = d3.select("#timeline-info-box");
     var infoContent = infoBox.empty() ? null : infoBox.select(".timeline-info-content");
     var infoToggle = d3.select("#timeline-info-toggle");
@@ -142,7 +189,8 @@ export function renderTimeline(container, rows) {
         markerLabel.attr("x", x).text(target.year.toString());
 
         // Move the tiny plane along the line
-        planeGroup.attr("transform", "translate(" + x + "," + y + ") rotate(0)");
+        // planeGroup.attr("transform", "translate(" + x + "," + y + ") rotate(0)");
+        planeGroup.attr("transform", "translate(" + x + "," + y + ") scale(" + (planeGroup._scale || 1) + ")");
 
         // Update global "crashes this year" index text, if present
         var yearCountEl = d3.select("#crash-count-year");
