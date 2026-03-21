@@ -41,7 +41,7 @@ body {
 .site-header {
     border-bottom: 2px solid var(--accent);
     background: var(--paper);
-    padding: 32px 0 28px;
+    padding: 32px 0 0px;
 }
 
 .header-row {
@@ -87,14 +87,22 @@ body {
 }
 
 /* Dear Data story */
-.story-intro,
-.story-outro {
-    max-width: 55ch;
-    margin: 28px 0;
+.story-intro {
+    max-width: 70ch;
+    margin: 0px 0;
     color: var(--muted);
-    font-size: 0.95rem;
+    font-size: 0.90rem;
     line-height: 1.7;
 }
+.story-outro {
+    max-width: 70ch;
+    margin: 28px 0;
+    color: var(--muted);
+    font-size: 0.80rem;
+    line-height: 1.7;
+}
+
+
 .story-outro {
     margin-top: 40px;
     padding-top: 24px;
