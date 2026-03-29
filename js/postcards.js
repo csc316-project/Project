@@ -29,7 +29,7 @@
         }
 
         card.addEventListener("toggle", function () {
-            if (card.open) closeOthers(card);
+            // if (card.open) closeOthers(card);
         });
     });
 })();

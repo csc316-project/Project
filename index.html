@@ -24,7 +24,7 @@
                     <div>
                         <p class="kicker">CSC316 Project</p>
                         <h1 class="title">Flight Risk</h1>
-                        <p class="subtitle"><strong>One dataset. Many stories.</strong>
+                        <p class="subtitle"><strong>One dataset. Many stories.</strong>  
                             We drew where, when, and why planes have
                             crashed—like sending postcards from the data.</p>
                     </div>
@@ -54,6 +54,7 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">We started by asking: when something goes wrong, what does the report
                         say? Technical failure, weather, human factor, or unknown. This sketch is our first draft of that
                         answer.</p>
@@ -62,6 +63,7 @@
                         Each bubble represents a root-cause category assigned to crashes in the dataset.
                         Bubble size reflects the number of crashes. Hover to see the exact count and overall share.
                     </p>
+                    </div>
                 </div>
             </details>
 
@@ -82,8 +84,9 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">On the left, a globe that fills with crash points as you move through
-                        time. On the right, a line being drawn year by year, with a tiny plane tracing the rhythm of
+                        time. On the right, a line being drawn year by year, with a tiny plane tracing the amount of
                         crashes.</p>
 
                     <div class="globe-controls">
@@ -160,6 +163,9 @@
                             </div>
                         </div>
                     </div>
+
+                    <p class="viz-desc">Do you notice a huge spike around 1944? The second world war began in 1939 and ended in 1945. I wonder if that has anything to do with it?</p>
+                    </div>
                 </div>
             </details>
 
@@ -180,9 +186,11 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">From the same dataset we counted how often each “Crash cause” appears.
                         Technical failure and Unknown lead; we leave the interpretation to you.</p>
                     <div id="causes-viz" class="viz-block"></div>
+                    </div>
                 </div>
             </details>
 
@@ -203,10 +211,12 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">We observed crashes from 1982 to 2019 and grouped them by flight phase. The size of each bubble is the
                         number of crashes in that phase. Landing and takeoff stand out.</p>
                     <div id="phases-chart" class="viz-block"></div>
                     <button id="reset-plane" class="reset-btn">Replay</button>
+                    </div>
                 </div>
             </details>
 
@@ -250,10 +260,12 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">Based on a crash study, we mapped where survivors were found in
                         different sections of the aircraft. The color shows relative fatality risk, i.e. darker zones had
                         fewer survivors. Hover over the text to see the details.</p>
                     <div id="airplane-heatmap" class="viz-block"></div>
+                    </div>
                 </div>
             </details>
 
@@ -274,12 +286,14 @@
                     </div>
                 </summary>
                 <div class="postcard-content">
+                    <div class="postcard-body">
                     <p class="viz-desc story-caption">We wondered how often weather is named. This interactive visualization
                         is our idea of
                         that relationship—another angle on the same data.</p>
                     <div id="weather-viz" class="viz-block" style="position: relative;"></div>
                     <p class="viz-desc">Number of crashes categorized by weather condition. The distance of the plane from
                         the axis represents the total frequency. Hover over the plane to see the exact count!</p>
+                    </div>
                 </div>
             </details>
 
