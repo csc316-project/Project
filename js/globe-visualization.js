@@ -1,4 +1,4 @@
-var W = 480, H = 420;
+var W = 480 * 0.80, H = 480 * 0.80;
 
 (function() {
     var box = d3.select("#globe-container");
