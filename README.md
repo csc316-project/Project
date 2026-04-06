@@ -10,7 +10,7 @@ A visual exploration of where, when, and why aviation incidents occur.
 - images: PNG files
 
 ## Libraries
-- Boostrap 5.3.3
+- Bootstrap 5.3.3
 - D3.js v7
 - TopoJSON v3
 
