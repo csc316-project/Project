@@ -2,6 +2,18 @@
 ## https://csc316-project.github.io/Project/
 A visual exploration of where, when, and why aviation incidents occur.
 
+## File Overview
+- index.html: HTML code
+- css: CSS code
+- js: JavaScript/D3.js code
+- data: CSV data files
+- images: PNG files
+
+## Libraries
+- Boostrap 5.3.3
+- D3.js v7
+- TopoJSON v3
+
 ## Questions This Project Explores
 - How do accident rates change over time?
 - Where do incidents cluster geographically?
