@@ -38,6 +38,9 @@ http://localhost:8000
 
 **Note:** You cannot open `index.html` directly in the browser because of CORS restrictions when loading CSV files. Use a local server.
 
+## Final Project Video 
+https://youtu.be/Yxy5vJkQg40
+
 ## Notes on Data
 Aviation incident datasets can be incomplete, inconsistently reported, or biased toward certain regions/time periods. 
 Visualizations in this project are meant to show **observed patterns in the available data**, not definitive conclusions about all aviation safety.
